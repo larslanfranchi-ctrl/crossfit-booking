@@ -54,22 +54,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      levels: {
-        Row: {
-          id: number;
-          name: string;
-          is_active: boolean;
-        };
-        Insert: {
-          name: string;
-          is_active?: boolean;
-        };
-        Update: {
-          name?: string;
-          is_active?: boolean;
-        };
-        Relationships: [];
-      };
       appointment_slots: {
         Row: {
           id: number;
@@ -77,7 +61,6 @@ export type Database = {
           end_time: string;
           capacity: number;
           course_type_id: number;
-          level_id: number;
           description: string | null;
           instructor_id: string | null;
           training_id: number | null;
@@ -89,7 +72,6 @@ export type Database = {
           end_time: string;
           capacity?: number;
           course_type_id: number;
-          level_id: number;
           description?: string | null;
           instructor_id?: string | null;
           training_id?: number | null;
@@ -100,7 +82,6 @@ export type Database = {
           end_time?: string;
           capacity?: number;
           course_type_id?: number;
-          level_id?: number;
           description?: string | null;
           instructor_id?: string | null;
           training_id?: number | null;
@@ -113,16 +94,19 @@ export type Database = {
           name: string;
           content: string | null;
           is_active: boolean;
+          sort_order: number;
         };
         Insert: {
           name: string;
           content?: string | null;
           is_active?: boolean;
+          sort_order?: number;
         };
         Update: {
           name?: string;
           content?: string | null;
           is_active?: boolean;
+          sort_order?: number;
         };
         Relationships: [];
       };
@@ -150,7 +134,6 @@ export type Database = {
           capacity: number;
           booked_count: number;
           course_type_id: number;
-          level_id: number;
         };
         Relationships: [];
       };

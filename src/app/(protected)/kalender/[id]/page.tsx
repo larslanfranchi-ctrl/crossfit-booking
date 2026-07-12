@@ -57,8 +57,7 @@ export default async function SlotDetailPage({
               {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
             </div>
             <div className="opacity-90">
-              {slot.courseTypeName ?? "Unbekannte Kursart"} ·{" "}
-              {slot.levelName ?? "Unbekanntes Level"}
+              {slot.courseTypeName ?? "Unbekannte Kursart"}
             </div>
           </div>
         </div>

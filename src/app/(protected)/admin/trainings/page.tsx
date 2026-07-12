@@ -2,11 +2,12 @@ import { getTrainings } from "@/lib/data/admin";
 import {
   createTraining,
   deleteTraining,
+  moveTraining,
   toggleTraining,
   updateTraining,
 } from "@/lib/actions/admin";
-import { RichTextEditor } from "@/components/rich-text-editor";
 import { TrainingTile } from "@/components/training-tile";
+import { CreateTrainingTile } from "@/components/create-training-tile";
 
 export default async function TrainingsPage({
   searchParams,
@@ -27,47 +28,19 @@ export default async function TrainingsPage({
       )}
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Training anlegen</h2>
-        <form
-          action={createTraining}
-          className="max-w-xl space-y-3 rounded border border-stone-200 p-4"
-        >
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium">
-              Name
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              required
-              placeholder="z.B. Push Day"
-              className="mt-1 w-full rounded border border-stone-300 px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Inhalt</label>
-            <RichTextEditor name="content" />
-          </div>
-          <button
-            type="submit"
-            className="rounded bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
-          >
-            Anlegen
-          </button>
-        </form>
-      </section>
-
-      <section>
         <h2 className="mb-3 text-lg font-semibold">Alle Trainings</h2>
         <div className="max-w-xl space-y-2">
-          {trainings.map((t) => (
+          <CreateTrainingTile createTraining={createTraining} />
+          {trainings.map((t, i) => (
             <TrainingTile
               key={t.id}
               training={t}
+              isFirst={i === 0}
+              isLast={i === trainings.length - 1}
               updateTraining={updateTraining}
               toggleTraining={toggleTraining}
               deleteTraining={deleteTraining}
+              moveTraining={moveTraining}
             />
           ))}
           {trainings.length === 0 && (

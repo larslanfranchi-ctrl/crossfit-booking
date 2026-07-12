@@ -16,8 +16,6 @@ export type SlotWithParticipants = {
   capacity: number;
   courseTypeId: number;
   courseTypeName: string | null;
-  levelId: number;
-  levelName: string | null;
   description: string | null;
   instructorId: string | null;
   instructorName: string | null;
@@ -37,6 +35,7 @@ export type TrainingItem = {
   name: string;
   content: string | null;
   is_active: boolean;
+  sort_order: number;
 };
 
 export type AdminUser = {
@@ -57,22 +56,12 @@ export async function getCourseTypes(): Promise<MasterDataItem[]> {
   return data ?? [];
 }
 
-export async function getLevels(): Promise<MasterDataItem[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("levels")
-    .select("id, name, is_active")
-    .order("name", { ascending: true });
-
-  if (error) throw error;
-  return data ?? [];
-}
-
 export async function getTrainings(): Promise<TrainingItem[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("trainings")
-    .select("id, name, content, is_active")
+    .select("id, name, content, is_active, sort_order")
+    .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
 
   if (error) throw error;
@@ -122,32 +111,28 @@ export async function getSlotsWithParticipants(
   const slotsQuery = supabase
     .from("appointment_slots")
     .select(
-      "id, start_time, end_time, capacity, course_type_id, level_id, description, instructor_id, training_id",
+      "id, start_time, end_time, capacity, course_type_id, description, instructor_id, training_id",
     )
     .order("start_time", { ascending: when === "upcoming" });
 
   const [
     { data: slots, error: slotsError },
     { data: courseTypes, error: courseTypesError },
-    { data: levels, error: levelsError },
     { data: trainings, error: trainingsError },
   ] = await Promise.all([
     when === "upcoming" ? slotsQuery.gte("start_time", now) : slotsQuery.lt("start_time", now),
     supabase.from("course_types").select("id, name"),
-    supabase.from("levels").select("id, name"),
     supabase.from("trainings").select("id, name"),
   ]);
 
   if (slotsError) throw slotsError;
   if (courseTypesError) throw courseTypesError;
-  if (levelsError) throw levelsError;
   if (trainingsError) throw trainingsError;
   if (!slots || slots.length === 0) return [];
 
   const courseTypeNameById = new Map(
     (courseTypes ?? []).map((c) => [c.id, c.name]),
   );
-  const levelNameById = new Map((levels ?? []).map((l) => [l.id, l.name]));
   const trainingNameById = new Map(
     (trainings ?? []).map((t) => [t.id, t.name]),
   );
@@ -192,8 +177,6 @@ export async function getSlotsWithParticipants(
     capacity: slot.capacity,
     courseTypeId: slot.course_type_id,
     courseTypeName: courseTypeNameById.get(slot.course_type_id) ?? null,
-    levelId: slot.level_id,
-    levelName: levelNameById.get(slot.level_id) ?? null,
     description: slot.description,
     instructorId: slot.instructor_id,
     instructorName: slot.instructor_id

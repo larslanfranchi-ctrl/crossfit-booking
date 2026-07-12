@@ -37,8 +37,7 @@ export default async function HomePage() {
                 {formatTime(booking.end_time)}
               </div>
               <div className="opacity-90">
-                {booking.courseTypeName ?? "Unbekannte Kursart"} ·{" "}
-                {booking.levelName ?? "Unbekanntes Level"}
+                {booking.courseTypeName ?? "Unbekannte Kursart"}
               </div>
             </div>
             <form action={cancelBooking}>

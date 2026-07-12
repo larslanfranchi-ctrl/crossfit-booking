@@ -1,11 +1,8 @@
-import { getCourseTypes, getLevels } from "@/lib/data/admin";
+import { getCourseTypes } from "@/lib/data/admin";
 import {
   createCourseType,
-  createLevel,
   deleteCourseType,
-  deleteLevel,
   toggleCourseType,
-  toggleLevel,
 } from "@/lib/actions/admin";
 
 export default async function StammdatenPage({
@@ -14,10 +11,7 @@ export default async function StammdatenPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
-  const [courseTypes, levels] = await Promise.all([
-    getCourseTypes(),
-    getLevels(),
-  ]);
+  const courseTypes = await getCourseTypes();
 
   return (
     <div className="space-y-10">
@@ -87,65 +81,6 @@ export default async function StammdatenPage({
           ))}
           {courseTypes.length === 0 && (
             <p className="text-sm text-stone-400">Noch keine Kursarten.</p>
-          )}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Level</h2>
-        <form action={createLevel} className="mb-4 flex max-w-md gap-2">
-          <input
-            name="name"
-            type="text"
-            required
-            placeholder="z.B. Anfänger"
-            className="flex-1 rounded border border-stone-300 px-3 py-2"
-          />
-          <button
-            type="submit"
-            className="rounded bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
-          >
-            Anlegen
-          </button>
-        </form>
-        <div className="max-w-md space-y-2">
-          {levels.map((l) => (
-            <div
-              key={l.id}
-              className="flex items-center justify-between rounded border border-stone-200 px-3 py-2"
-            >
-              <span className={l.is_active ? "" : "text-stone-400 line-through"}>
-                {l.name}
-              </span>
-              <div className="flex items-center gap-2">
-                <form action={toggleLevel}>
-                  <input type="hidden" name="id" value={l.id} />
-                  <input
-                    type="hidden"
-                    name="newActive"
-                    value={l.is_active ? "false" : "true"}
-                  />
-                  <button
-                    type="submit"
-                    className="rounded bg-stone-50 px-3 py-1 text-sm text-stone-700 hover:bg-stone-100"
-                  >
-                    {l.is_active ? "Deaktivieren" : "Aktivieren"}
-                  </button>
-                </form>
-                <form action={deleteLevel}>
-                  <input type="hidden" name="id" value={l.id} />
-                  <button
-                    type="submit"
-                    className="rounded bg-error-50 px-3 py-1 text-sm text-error-700 hover:bg-error-100"
-                  >
-                    Löschen
-                  </button>
-                </form>
-              </div>
-            </div>
-          ))}
-          {levels.length === 0 && (
-            <p className="text-sm text-stone-400">Noch keine Level.</p>
           )}
         </div>
       </section>

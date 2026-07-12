@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSlotsInRange, type SlotWithAvailability } from "@/lib/data/slots";
 import { bookSlot, cancelBooking } from "@/lib/actions/bookings";
+import { courseColor } from "@/lib/course-colors";
 import {
   addDays,
   addMonths,
@@ -257,9 +258,13 @@ export default async function KalenderPage({
                 <div className="font-semibold text-stone-900">
                   {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
                 </div>
-                <div className="truncate text-sm text-stone-500">
-                  {slot.courseTypeName ?? "Unbekannte Kursart"} ·{" "}
-                  {slot.levelName ?? "Unbekanntes Level"}
+                <div
+                  className="truncate text-sm font-bold"
+                  style={{
+                    color: tone === "past" ? undefined : courseColor(slot.courseTypeId),
+                  }}
+                >
+                  {slot.courseTypeName ?? "Unbekannte Kursart"}
                 </div>
               </Link>
               <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">

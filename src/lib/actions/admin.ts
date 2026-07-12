@@ -21,7 +21,6 @@ function parseSlotForm(formData: FormData) {
   const endTime = String(formData.get("endTime") ?? "");
   const capacity = Number(formData.get("capacity") ?? 1);
   const courseTypeId = Number(formData.get("courseTypeId"));
-  const levelId = Number(formData.get("levelId"));
   const description = String(formData.get("description") ?? "").trim() || null;
   const instructorIdRaw = String(formData.get("instructorId") ?? "").trim();
   const instructorId = instructorIdRaw || null;
@@ -37,15 +36,13 @@ function parseSlotForm(formData: FormData) {
     endDate > startDate &&
     Number.isFinite(capacity) &&
     capacity >= 1 &&
-    Number.isFinite(courseTypeId) &&
-    Number.isFinite(levelId);
+    Number.isFinite(courseTypeId);
 
   return {
     startDate,
     endDate,
     capacity,
     courseTypeId,
-    levelId,
     description,
     instructorId,
     trainingId,
@@ -66,7 +63,6 @@ export async function createSlot(formData: FormData) {
     endDate,
     capacity,
     courseTypeId,
-    levelId,
     description,
     instructorId,
     trainingId,
@@ -76,7 +72,7 @@ export async function createSlot(formData: FormData) {
   if (!isValid) {
     redirect(
       buildAdminUrl(
-        "Ungültige Eingabe: Endzeit muss nach der Startzeit liegen, Kapazität mindestens 1, Kursart und Level müssen ausgewählt sein.",
+        "Ungültige Eingabe: Endzeit muss nach der Startzeit liegen, Kapazität mindestens 1, Kursart muss ausgewählt sein.",
       ),
     );
   }
@@ -86,7 +82,6 @@ export async function createSlot(formData: FormData) {
     end_time: endDate.toISOString(),
     capacity,
     course_type_id: courseTypeId,
-    level_id: levelId,
     description,
     instructor_id: instructorId,
     training_id: trainingId,
@@ -112,7 +107,6 @@ export async function updateSlot(formData: FormData) {
     endDate,
     capacity,
     courseTypeId,
-    levelId,
     description,
     instructorId,
     trainingId,
@@ -122,7 +116,7 @@ export async function updateSlot(formData: FormData) {
   if (!isValid) {
     redirect(
       buildAdminUrl(
-        "Ungültige Eingabe: Endzeit muss nach der Startzeit liegen, Kapazität mindestens 1, Kursart und Level müssen ausgewählt sein.",
+        "Ungültige Eingabe: Endzeit muss nach der Startzeit liegen, Kapazität mindestens 1, Kursart muss ausgewählt sein.",
       ),
     );
   }
@@ -151,7 +145,6 @@ export async function updateSlot(formData: FormData) {
       end_time: endDate.toISOString(),
       capacity,
       course_type_id: courseTypeId,
-      level_id: levelId,
       description,
       instructor_id: instructorId,
       training_id: trainingId,
@@ -181,7 +174,6 @@ export async function createRecurringSlots(formData: FormData) {
   const endTime = String(formData.get("endTime") ?? "");
   const capacity = Number(formData.get("capacity") ?? 1);
   const courseTypeId = Number(formData.get("courseTypeId"));
-  const levelId = Number(formData.get("levelId"));
   const occurrences = Number(formData.get("occurrences") ?? 0);
   const description = String(formData.get("description") ?? "").trim() || null;
   const instructorIdRaw = String(formData.get("instructorId") ?? "").trim();
@@ -199,7 +191,6 @@ export async function createRecurringSlots(formData: FormData) {
     Number.isFinite(capacity) &&
     capacity >= 1 &&
     Number.isFinite(courseTypeId) &&
-    Number.isFinite(levelId) &&
     Number.isInteger(occurrences) &&
     occurrences >= 1 &&
     occurrences <= 52;
@@ -207,7 +198,7 @@ export async function createRecurringSlots(formData: FormData) {
   if (!isValid) {
     redirect(
       buildAdminUrl(
-        "Ungültige Eingabe für den Serientermin (Datum/Zeit/Kapazität/Kursart/Level/Anzahl Wiederholungen prüfen, max. 52).",
+        "Ungültige Eingabe für den Serientermin (Datum/Zeit/Kapazität/Kursart/Anzahl Wiederholungen prüfen, max. 52).",
       ),
     );
   }
@@ -220,7 +211,6 @@ export async function createRecurringSlots(formData: FormData) {
       end_time: end.toISOString(),
       capacity,
       course_type_id: courseTypeId,
-      level_id: levelId,
       description,
       instructor_id: instructorId,
       training_id: trainingId,
@@ -287,7 +277,7 @@ export async function copyDay(formData: FormData) {
   const { data: sourceSlots, error: fetchError } = await supabase
     .from("appointment_slots")
     .select(
-      "start_time, end_time, capacity, course_type_id, level_id, description, instructor_id, training_id",
+      "start_time, end_time, capacity, course_type_id, description, instructor_id, training_id",
     )
     .gte("start_time", sourceDate.toISOString())
     .lt("start_time", addDays(sourceDate, 1).toISOString());
@@ -314,7 +304,6 @@ export async function copyDay(formData: FormData) {
     ).toISOString(),
     capacity: slot.capacity,
     course_type_id: slot.course_type_id,
-    level_id: slot.level_id,
     description: slot.description,
     instructor_id: slot.instructor_id,
     training_id: slot.training_id,
@@ -391,62 +380,6 @@ export async function deleteCourseType(formData: FormData) {
   redirect("/admin/stammdaten");
 }
 
-export async function createLevel(formData: FormData) {
-  const name = String(formData.get("name") ?? "").trim();
-  const supabase = await createClient();
-
-  if (!name) {
-    redirect(buildUrl("/admin/stammdaten", "Name darf nicht leer sein."));
-  }
-
-  const { error } = await supabase.from("levels").insert({ name });
-
-  if (error) {
-    redirect(buildUrl("/admin/stammdaten", error.message));
-  }
-
-  revalidatePath("/admin/stammdaten");
-  redirect("/admin/stammdaten");
-}
-
-export async function toggleLevel(formData: FormData) {
-  const id = Number(formData.get("id"));
-  const newActive = formData.get("newActive") === "true";
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("levels")
-    .update({ is_active: newActive })
-    .eq("id", id);
-
-  if (error) {
-    redirect(buildUrl("/admin/stammdaten", error.message));
-  }
-
-  revalidatePath("/admin/stammdaten");
-  revalidatePath("/admin");
-  redirect("/admin/stammdaten");
-}
-
-export async function deleteLevel(formData: FormData) {
-  const id = Number(formData.get("id"));
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("levels").delete().eq("id", id);
-
-  if (error) {
-    const message =
-      error.code === "23503"
-        ? "Dieses Level wird noch von bestehenden Terminen verwendet und kann nicht gelöscht werden. Du kannst es stattdessen deaktivieren."
-        : error.message;
-    redirect(buildUrl("/admin/stammdaten", message));
-  }
-
-  revalidatePath("/admin/stammdaten");
-  revalidatePath("/admin");
-  redirect("/admin/stammdaten");
-}
-
 export async function createTraining(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim() || null;
@@ -456,12 +389,77 @@ export async function createTraining(formData: FormData) {
     redirect(buildUrl("/admin/trainings", "Name darf nicht leer sein."));
   }
 
+  // Neues Training ans Ende der manuellen Reihenfolge hängen.
+  const { data: last, error: lastError } = await supabase
+    .from("trainings")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (lastError) {
+    redirect(buildUrl("/admin/trainings", lastError.message));
+  }
+
+  const nextSortOrder = (last?.sort_order ?? 0) + 1;
+
   const { error } = await supabase
     .from("trainings")
-    .insert({ name, content });
+    .insert({ name, content, sort_order: nextSortOrder });
 
   if (error) {
     redirect(buildUrl("/admin/trainings", error.message));
+  }
+
+  revalidatePath("/admin/trainings");
+  redirect("/admin/trainings");
+}
+
+export async function moveTraining(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const direction = String(formData.get("direction") ?? "");
+  const supabase = await createClient();
+
+  if (!Number.isFinite(id) || (direction !== "up" && direction !== "down")) {
+    redirect(buildUrl("/admin/trainings", "Ungültige Eingabe."));
+  }
+
+  const { data: trainings, error: listError } = await supabase
+    .from("trainings")
+    .select("id, sort_order")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (listError) {
+    redirect(buildUrl("/admin/trainings", listError.message));
+  }
+
+  const list = trainings ?? [];
+  const index = list.findIndex((t) => t.id === id);
+  const neighborIndex = direction === "up" ? index - 1 : index + 1;
+
+  // Am Rand (schon ganz oben/unten) oder Training nicht gefunden: nichts tun.
+  if (index === -1 || neighborIndex < 0 || neighborIndex >= list.length) {
+    redirect("/admin/trainings");
+  }
+
+  const current = list[index];
+  const neighbor = list[neighborIndex];
+
+  // sort_order der beiden Nachbarn tauschen.
+  const [{ error: e1 }, { error: e2 }] = await Promise.all([
+    supabase
+      .from("trainings")
+      .update({ sort_order: neighbor.sort_order })
+      .eq("id", current.id),
+    supabase
+      .from("trainings")
+      .update({ sort_order: current.sort_order })
+      .eq("id", neighbor.id),
+  ]);
+
+  if (e1 || e2) {
+    redirect(buildUrl("/admin/trainings", (e1 ?? e2)!.message));
   }
 
   revalidatePath("/admin/trainings");

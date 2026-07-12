@@ -7,8 +7,8 @@ export type SlotWithAvailability = {
   capacity: number;
   bookedCount: number;
   isBookedByMe: boolean;
+  courseTypeId: number;
   courseTypeName: string | null;
-  levelName: string | null;
 };
 
 export async function getSlotsInRange(
@@ -26,31 +26,27 @@ export async function getSlotsInRange(
     { data: slots, error: slotsError },
     { data: myBookings, error: bookingsError },
     { data: courseTypes, error: courseTypesError },
-    { data: levels, error: levelsError },
   ] = await Promise.all([
     supabase
       .from("slot_availability")
       .select(
-        "id, start_time, end_time, capacity, booked_count, course_type_id, level_id",
+        "id, start_time, end_time, capacity, booked_count, course_type_id",
       )
       .gte("start_time", rangeStart.toISOString())
       .lt("start_time", rangeEnd.toISOString())
       .order("start_time", { ascending: true }),
     supabase.from("bookings").select("slot_id").eq("user_id", user.id),
     supabase.from("course_types").select("id, name"),
-    supabase.from("levels").select("id, name"),
   ]);
 
   if (slotsError) throw slotsError;
   if (bookingsError) throw bookingsError;
   if (courseTypesError) throw courseTypesError;
-  if (levelsError) throw levelsError;
 
   const myBookedSlotIds = new Set((myBookings ?? []).map((b) => b.slot_id));
   const courseTypeNameById = new Map(
     (courseTypes ?? []).map((c) => [c.id, c.name]),
   );
-  const levelNameById = new Map((levels ?? []).map((l) => [l.id, l.name]));
 
   return (slots ?? []).map((slot) => ({
     id: slot.id,
@@ -59,8 +55,8 @@ export async function getSlotsInRange(
     capacity: slot.capacity,
     bookedCount: slot.booked_count,
     isBookedByMe: myBookedSlotIds.has(slot.id),
+    courseTypeId: slot.course_type_id,
     courseTypeName: courseTypeNameById.get(slot.course_type_id) ?? null,
-    levelName: levelNameById.get(slot.level_id) ?? null,
   }));
 }
 
@@ -73,7 +69,6 @@ export type SlotDetail = {
   bookedCount: number;
   isBookedByMe: boolean;
   courseTypeName: string | null;
-  levelName: string | null;
   instructorName: string | null;
   trainingName: string | null;
   trainingContent: string | null;
@@ -94,7 +89,7 @@ export async function getSlotById(id: number): Promise<SlotDetail | null> {
     supabase
       .from("appointment_slots")
       .select(
-        "id, start_time, end_time, capacity, description, course_type_id, level_id, training_id",
+        "id, start_time, end_time, capacity, description, course_type_id, training_id",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -112,26 +107,20 @@ export async function getSlotById(id: number): Promise<SlotDetail | null> {
   if (detailError) throw detailError;
   if (!slot) return null;
 
-  const [{ data: courseType }, { data: level }, { data: training }] =
-    await Promise.all([
-      supabase
-        .from("course_types")
-        .select("name")
-        .eq("id", slot.course_type_id)
-        .maybeSingle(),
-      supabase
-        .from("levels")
-        .select("name")
-        .eq("id", slot.level_id)
-        .maybeSingle(),
-      slot.training_id
-        ? supabase
-            .from("trainings")
-            .select("name, content")
-            .eq("id", slot.training_id)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+  const [{ data: courseType }, { data: training }] = await Promise.all([
+    supabase
+      .from("course_types")
+      .select("name")
+      .eq("id", slot.course_type_id)
+      .maybeSingle(),
+    slot.training_id
+      ? supabase
+          .from("trainings")
+          .select("name, content")
+          .eq("id", slot.training_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   const detail = detailRows?.[0];
   const participantNames = detail?.participant_names ?? [];
@@ -145,7 +134,6 @@ export async function getSlotById(id: number): Promise<SlotDetail | null> {
     bookedCount: participantNames.length,
     isBookedByMe: Boolean(myBooking),
     courseTypeName: courseType?.name ?? null,
-    levelName: level?.name ?? null,
     instructorName: detail?.instructor_name ?? null,
     trainingName: training?.name ?? null,
     trainingContent: training?.content ?? null,
@@ -157,8 +145,8 @@ export type MyBooking = {
   slotId: number;
   start_time: string;
   end_time: string;
+  courseTypeId: number;
   courseTypeName: string | null;
-  levelName: string | null;
 };
 
 export async function getMyUpcomingBookings(): Promise<MyBooking[]> {
@@ -180,32 +168,28 @@ export async function getMyUpcomingBookings(): Promise<MyBooking[]> {
   const [
     { data: slots, error: slotsError },
     { data: courseTypes, error: courseTypesError },
-    { data: levels, error: levelsError },
   ] = await Promise.all([
     supabase
       .from("appointment_slots")
-      .select("id, start_time, end_time, course_type_id, level_id")
+      .select("id, start_time, end_time, course_type_id")
       .in("id", slotIds)
       .gte("start_time", new Date().toISOString())
       .order("start_time", { ascending: true }),
     supabase.from("course_types").select("id, name"),
-    supabase.from("levels").select("id, name"),
   ]);
 
   if (slotsError) throw slotsError;
   if (courseTypesError) throw courseTypesError;
-  if (levelsError) throw levelsError;
 
   const courseTypeNameById = new Map(
     (courseTypes ?? []).map((c) => [c.id, c.name]),
   );
-  const levelNameById = new Map((levels ?? []).map((l) => [l.id, l.name]));
 
   return (slots ?? []).map((slot) => ({
     slotId: slot.id,
     start_time: slot.start_time,
     end_time: slot.end_time,
+    courseTypeId: slot.course_type_id,
     courseTypeName: courseTypeNameById.get(slot.course_type_id) ?? null,
-    levelName: levelNameById.get(slot.level_id) ?? null,
   }));
 }

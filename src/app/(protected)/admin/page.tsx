@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   getCourseTypes,
   getInstructors,
-  getLevels,
   getSlotsWithParticipants,
   getTrainings,
 } from "@/lib/data/admin";
@@ -24,18 +23,16 @@ export default async function AdminPage({
   searchParams: Promise<{ error?: string; edit?: string }>;
 }) {
   const params = await searchParams;
-  const [slots, pastSlots, courseTypes, levels, instructors, trainings] =
+  const [slots, pastSlots, courseTypes, instructors, trainings] =
     await Promise.all([
       getSlotsWithParticipants("upcoming"),
       getSlotsWithParticipants("past"),
       getCourseTypes(),
-      getLevels(),
       getInstructors(),
       getTrainings(),
     ]);
 
   const activeCourseTypes = courseTypes.filter((c) => c.is_active);
-  const activeLevels = levels.filter((l) => l.is_active);
   const activeTrainings = trainings.filter((t) => t.is_active);
 
   const editId = params.edit ? Number(params.edit) : null;
@@ -128,25 +125,6 @@ export default async function AdminPage({
               {activeCourseTypes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-span-2 sm:col-span-2">
-            <label htmlFor="levelId" className="block text-sm font-medium">
-              Level
-            </label>
-            <select
-              id="levelId"
-              name="levelId"
-              required
-              defaultValue={editSlot?.levelId}
-              className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
-            >
-              <option value="">Bitte wählen</option>
-              {activeLevels.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
                 </option>
               ))}
             </select>
@@ -302,7 +280,7 @@ export default async function AdminPage({
                 className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
               />
             </div>
-            <div className="col-span-2 sm:col-span-1">
+            <div className="col-span-2 sm:col-span-2">
               <label
                 htmlFor="seriesCourseTypeId"
                 className="block text-sm font-medium"
@@ -319,27 +297,6 @@ export default async function AdminPage({
                 {activeCourseTypes.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-span-2 sm:col-span-1">
-              <label
-                htmlFor="seriesLevelId"
-                className="block text-sm font-medium"
-              >
-                Level
-              </label>
-              <select
-                id="seriesLevelId"
-                name="levelId"
-                required
-                className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
-              >
-                <option value="">Bitte wählen</option>
-                {activeLevels.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
                   </option>
                 ))}
               </select>
@@ -441,8 +398,8 @@ export default async function AdminPage({
               />
             </div>
             <p className="col-span-2 text-xs text-stone-500">
-              Kopiert alle Termine (Uhrzeit, Kursart, Level, Kapazität) vom
-              Quelltag auf den Zieltag.
+              Kopiert alle Termine (Uhrzeit, Kursart, Kapazität) vom Quelltag
+              auf den Zieltag.
             </p>
             <div className="col-span-2">
               <button
@@ -522,8 +479,7 @@ export default async function AdminPage({
                     {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
                   </div>
                   <div className="text-xs text-stone-500">
-                    {slot.courseTypeName ?? "Unbekannte Kursart"} ·{" "}
-                    {slot.levelName ?? "Unbekanntes Level"}
+                    {slot.courseTypeName ?? "Unbekannte Kursart"}
                     {slot.instructorName && <> · {slot.instructorName}</>}
                     {slot.trainingName && <> · {slot.trainingName}</>} ·{" "}
                     {slot.participants.length}/{slot.capacity} belegt
@@ -570,8 +526,7 @@ export default async function AdminPage({
         </div>
         <p className="mb-3 text-xs text-stone-500">
           Vergangene Termine blockieren weiterhin das Löschen ihrer Kursart
-          bzw. ihres Levels unter Stammdaten, solange sie hier nicht entfernt
-          werden.
+          unter Stammdaten, solange sie hier nicht entfernt werden.
         </p>
         {pastSlots.length === 0 && (
           <p className="text-sm text-stone-400">Keine vergangenen Termine.</p>
@@ -595,8 +550,7 @@ export default async function AdminPage({
                   {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
                 </div>
                 <div className="text-xs text-stone-500">
-                  {slot.courseTypeName ?? "Unbekannte Kursart"} ·{" "}
-                  {slot.levelName ?? "Unbekanntes Level"}
+                  {slot.courseTypeName ?? "Unbekannte Kursart"}
                   {slot.instructorName && <> · {slot.instructorName}</>}
                   {slot.trainingName && <> · {slot.trainingName}</>} ·{" "}
                   {slot.participants.length}/{slot.capacity} belegt
