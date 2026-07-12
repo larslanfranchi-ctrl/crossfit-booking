@@ -1,0 +1,8 @@
+-- Kein automatisches Self-Service-Admin-Signup vorgesehen. Nachdem sich der
+-- erste Nutzer über /register registriert hat, dessen Rolle manuell setzen:
+--
+-- 1. UUID des Nutzers ermitteln:
+--    SELECT id, full_name FROM profiles;
+--
+-- 2. Rolle auf 'admin' setzen (UUID ersetzen):
+--    UPDATE profiles SET role = 'admin' WHERE id = '<uuid-des-nutzers>';

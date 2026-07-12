@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf7f2;
+  --foreground: #3a3530;
+  /* Die App hat aktuell nur ein festes, helles Theme (keine dark:-Varianten).
+     Ohne diese Zeile wenden manche mobile Browser (v.a. Android Chrome mit
+     "Dunkles Design erzwingen") ihre eigene automatische Dunkelmodus-
+     Invertierung auf die Seite an - das führt zu Kontrastfehlern (Text/Icons
+     in exakt derselben Farbe wie der Hintergrund), weil der Browser Farben
+     rät statt das bewusst gewählte Farbschema zu respektieren. */
+  color-scheme: light;
 }
 
 @theme inline {
@@ -10,13 +17,32 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Sage & Sand palette */
+  --color-surface: #f0ebe1;
+
+  --color-primary-50: #e9eee9;
+  --color-primary-500: #6b8e76;
+  --color-primary-600: #6b8e76;
+  --color-primary-700: #55725f;
+
+  --color-success-50: #eef3ec;
+  --color-success-500: #7a9471;
+  --color-success-600: #587a4c;
+  --color-success-700: #46613c;
+
+  --color-accent-200: #eac4b3;
+  --color-accent-400: #c97b5a;
+  --color-accent-600: #a85736;
+  --color-accent-900: #6b3320;
+
+  --color-error-50: #fbeeec;
+  --color-error-100: #f5ded8;
+  --color-error-200: #e7c2b7;
+  --color-error-700: #96422f;
+
+  --color-warning-50: #fbf3e4;
+  --color-warning-700: #92661f;
 }
 
 body {

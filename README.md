@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Surf Booking
 
-## Getting Started
+Yoga-Studio-Buchungs-App: Nutzer melden sich an und buchen freie Kurstermine
+über eine Wochenkalender-Ansicht, Admins verwalten Kurse, Kursarten/Level und
+Nutzerrollen. Fachliche Anforderungen: [`docs/fachkonzept.md`](docs/fachkonzept.md).
 
-First, run the development server:
+Umsetzung erfolgt in Phasen (siehe Fachkonzept Abschnitt 4 für alle User
+Stories). **Bisher umgesetzt:**
+- Phase 1 – Kursverwaltung: Kursarten/Level als Stammdaten, Serientermine,
+  Termine bearbeiten, Admin-Rollenvergabe per Schalter.
+- Phase 2 – Konto: Passwort-Reset per E-Mail, Profilbearbeitung (Name,
+  Telefonnummer).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Noch offen:** Warteliste, Zahlungen/Mitgliedschaften, Admin-Reporting.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Ein neues Projekt auf [supabase.com](https://supabase.com) anlegen.
+2. Im Supabase SQL-Editor die Dateien unter `supabase/sql/` **in numerischer
+   Reihenfolge** ausführen (001 bis 020, `.sql.example`-Dateien überspringen).
+3. `.env.example` nach `.env.local` kopieren und `NEXT_PUBLIC_SUPABASE_URL` /
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` aus den Supabase-Projekteinstellungen
+   (Project Settings → API) eintragen.
+4. Supabase-Dashboard → Authentication → URL Configuration: `http://localhost:3000/auth/callback`
+   zu den **Redirect URLs** hinzufügen (nötig für den Passwort-Reset-Link;
+   für eine spätere Produktions-Domain zusätzlich deren `/auth/callback`-URL
+   eintragen).
+5. Abhängigkeiten installieren und Dev-Server starten:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm install
+   npm run dev
+   ```
 
-## Learn More
+6. Unter `/register` einen ersten Nutzer anlegen, dann per SQL (siehe
+   `supabase/sql/011_set_first_admin.sql.example`) dessen Rolle auf `admin`
+   setzen, um Zugriff auf `/admin` zu bekommen. Weitere Admins können danach
+   bequem über `/admin/nutzer` ernannt werden.
+7. Unter `/admin/stammdaten` mindestens eine Kursart und ein Level anlegen,
+   bevor unter `/admin` Termine erstellt werden können (beides ist Pflicht
+   pro Termin).
 
-To learn more about Next.js, take a look at the following resources:
+## Rollen
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Admin**: `/admin` (Termine anlegen/bearbeiten/löschen, Einzel- und
+  Serientermine), `/admin/stammdaten` (Kursarten/Level verwalten),
+  `/admin/nutzer` (Admin-Rechte per Schalter vergeben/entziehen).
+- **Benutzer**: `/kalender` (Wochenansicht, Termine buchen/stornieren).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Rollen werden nicht per Self-Service vergeben - ein neuer Account ist immer
+`user`. Der letzte verbleibende Admin kann nicht herabgestuft werden
+(serverseitig per DB-Trigger erzwungen, nicht nur in der UI).
