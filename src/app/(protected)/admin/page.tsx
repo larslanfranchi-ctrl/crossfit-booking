@@ -20,7 +20,7 @@ import { CreateSlotTabs } from "@/components/create-slot-tabs";
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; edit?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; edit?: string }>;
 }) {
   const params = await searchParams;
   const [slots, pastSlots, courseTypes, instructors, trainings] =
@@ -417,6 +417,12 @@ export default async function AdminPage({
     <div className="space-y-10">
       <div>
         <h1 className="mb-6 text-2xl font-semibold">Termine verwalten</h1>
+
+        {params.message && (
+          <p className="mb-4 rounded bg-success-50 p-3 text-sm text-success-700">
+            {params.message}
+          </p>
+        )}
 
         {params.error && (
           <p className="mb-4 rounded bg-error-50 p-3 text-sm text-error-700">

@@ -17,10 +17,13 @@ const ACTION_BUTTON_STYLE = "bg-white/25 text-white hover:bg-white/40";
 
 export default async function SlotDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const { id } = await params;
+  const { error: errorMessage, message } = await searchParams;
   const slotId = Number(id);
   const slot = Number.isFinite(slotId) ? await getSlotById(slotId) : null;
 
@@ -43,6 +46,18 @@ export default async function SlotDetailPage({
       <Link href="/kalender" className="text-sm text-primary-600 underline">
         ← Zurück zum Kalender
       </Link>
+
+      {message && (
+        <p className="mt-4 rounded bg-success-50 p-3 text-sm text-success-700">
+          {message}
+        </p>
+      )}
+
+      {errorMessage && (
+        <p className="mt-4 rounded bg-error-50 p-3 text-sm text-error-700">
+          {errorMessage}
+        </p>
+      )}
 
       <div className={`mt-4 rounded-xl p-5 ${CARD_STYLES[tone]}`}>
         <div className="flex items-center gap-4">

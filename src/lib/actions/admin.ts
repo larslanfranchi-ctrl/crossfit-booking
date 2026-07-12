@@ -15,6 +15,10 @@ function buildUrl(path: string, error?: string) {
   return `${path}?error=${encodeURIComponent(error)}`;
 }
 
+function successUrl(path: string, message: string) {
+  return `${path}?message=${encodeURIComponent(message)}`;
+}
+
 function parseSlotForm(formData: FormData) {
   const date = String(formData.get("date") ?? "");
   const startTime = String(formData.get("startTime") ?? "");
@@ -95,7 +99,7 @@ export async function createSlot(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/kalender");
   revalidatePath("/home");
-  redirect("/admin");
+  redirect(successUrl("/admin", "Termin angelegt."));
 }
 
 export async function updateSlot(formData: FormData) {
@@ -158,7 +162,7 @@ export async function updateSlot(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/kalender");
   revalidatePath("/home");
-  redirect("/admin");
+  redirect(successUrl("/admin", "Termin gespeichert."));
 }
 
 export async function createRecurringSlots(formData: FormData) {
@@ -227,7 +231,14 @@ export async function createRecurringSlots(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/kalender");
   revalidatePath("/home");
-  redirect("/admin");
+  redirect(
+    successUrl(
+      "/admin",
+      occurrences === 1
+        ? "Termin angelegt."
+        : `${occurrences} Serientermine angelegt.`,
+    ),
+  );
 }
 
 export async function deleteSlots(formData: FormData) {
@@ -253,7 +264,14 @@ export async function deleteSlots(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/kalender");
   revalidatePath("/home");
-  redirect("/admin");
+  redirect(
+    successUrl(
+      "/admin",
+      slotIds.length === 1
+        ? "Termin gelöscht."
+        : `${slotIds.length} Termine gelöscht.`,
+    ),
+  );
 }
 
 export async function copyDay(formData: FormData) {
@@ -321,7 +339,14 @@ export async function copyDay(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/kalender");
   revalidatePath("/home");
-  redirect("/admin");
+  redirect(
+    successUrl(
+      "/admin",
+      rows.length === 1
+        ? "1 Termin kopiert."
+        : `${rows.length} Termine kopiert.`,
+    ),
+  );
 }
 
 export async function createCourseType(formData: FormData) {
@@ -339,7 +364,7 @@ export async function createCourseType(formData: FormData) {
   }
 
   revalidatePath("/admin/stammdaten");
-  redirect("/admin/stammdaten");
+  redirect(successUrl("/admin/stammdaten", "Kursart angelegt."));
 }
 
 export async function toggleCourseType(formData: FormData) {
@@ -358,7 +383,12 @@ export async function toggleCourseType(formData: FormData) {
 
   revalidatePath("/admin/stammdaten");
   revalidatePath("/admin");
-  redirect("/admin/stammdaten");
+  redirect(
+    successUrl(
+      "/admin/stammdaten",
+      newActive ? "Kursart aktiviert." : "Kursart deaktiviert.",
+    ),
+  );
 }
 
 export async function deleteCourseType(formData: FormData) {
@@ -377,7 +407,7 @@ export async function deleteCourseType(formData: FormData) {
 
   revalidatePath("/admin/stammdaten");
   revalidatePath("/admin");
-  redirect("/admin/stammdaten");
+  redirect(successUrl("/admin/stammdaten", "Kursart gelöscht."));
 }
 
 export async function createTraining(formData: FormData) {
@@ -412,7 +442,7 @@ export async function createTraining(formData: FormData) {
   }
 
   revalidatePath("/admin/trainings");
-  redirect("/admin/trainings");
+  redirect(successUrl("/admin/trainings", "Training angelegt."));
 }
 
 export async function moveTraining(formData: FormData) {
@@ -488,7 +518,7 @@ export async function updateTraining(formData: FormData) {
   revalidatePath("/admin/trainings");
   revalidatePath("/admin");
   revalidatePath("/kalender");
-  redirect("/admin/trainings");
+  redirect(successUrl("/admin/trainings", "Training gespeichert."));
 }
 
 export async function toggleTraining(formData: FormData) {
@@ -507,7 +537,12 @@ export async function toggleTraining(formData: FormData) {
 
   revalidatePath("/admin/trainings");
   revalidatePath("/admin");
-  redirect("/admin/trainings");
+  redirect(
+    successUrl(
+      "/admin/trainings",
+      newActive ? "Training aktiviert." : "Training deaktiviert.",
+    ),
+  );
 }
 
 export async function deleteTraining(formData: FormData) {
@@ -526,7 +561,7 @@ export async function deleteTraining(formData: FormData) {
 
   revalidatePath("/admin/trainings");
   revalidatePath("/admin");
-  redirect("/admin/trainings");
+  redirect(successUrl("/admin/trainings", "Training gelöscht."));
 }
 
 export async function setUserRole(formData: FormData) {
@@ -547,7 +582,14 @@ export async function setUserRole(formData: FormData) {
     redirect(buildUrl("/admin/nutzer", error.message));
   }
 
+  const roleLabel =
+    newRole === "admin"
+      ? "Admin"
+      : newRole === "instructor"
+        ? "Kursleiter:in"
+        : "Nutzer:in";
+
   revalidatePath("/admin/nutzer");
   revalidatePath("/", "layout");
-  redirect("/admin/nutzer");
+  redirect(successUrl("/admin/nutzer", `Rolle auf ${roleLabel} geändert.`));
 }

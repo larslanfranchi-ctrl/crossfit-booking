@@ -48,6 +48,7 @@ export default async function KalenderPage({
     week?: string;
     day?: string;
     error?: string;
+    message?: string;
     picker?: string;
     pickerMonth?: string;
   }>;
@@ -219,6 +220,12 @@ export default async function KalenderPage({
           ›
         </Link>
       </div>
+
+      {params.message && (
+        <p className="mb-4 rounded bg-success-50 p-3 text-sm text-success-700">
+          {params.message}
+        </p>
+      )}
 
       {params.error && (
         <p className="mb-4 rounded bg-error-50 p-3 text-sm text-error-700">

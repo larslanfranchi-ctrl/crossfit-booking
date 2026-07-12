@@ -3,12 +3,29 @@ import { getMyUpcomingBookings } from "@/lib/data/slots";
 import { cancelBooking } from "@/lib/actions/bookings";
 import { formatDate, formatTime, toDateKey } from "@/lib/date-utils";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; message?: string }>;
+}) {
+  const params = await searchParams;
   const bookings = await getMyUpcomingBookings();
 
   return (
     <div>
       <h1 className="mb-6 text-2xl font-semibold">Meine Termine</h1>
+
+      {params.message && (
+        <p className="mb-4 rounded bg-success-50 p-3 text-sm text-success-700">
+          {params.message}
+        </p>
+      )}
+
+      {params.error && (
+        <p className="mb-4 rounded bg-error-50 p-3 text-sm text-error-700">
+          {params.error}
+        </p>
+      )}
 
       {bookings.length === 0 && (
         <div className="rounded-xl border border-stone-200 p-6 text-center">

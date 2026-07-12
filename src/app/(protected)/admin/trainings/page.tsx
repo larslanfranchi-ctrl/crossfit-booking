@@ -12,7 +12,7 @@ import { CreateTrainingTile } from "@/components/create-training-tile";
 export default async function TrainingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const params = await searchParams;
   const trainings = await getTrainings();
@@ -20,6 +20,12 @@ export default async function TrainingsPage({
   return (
     <div className="space-y-10">
       <h1 className="text-2xl font-semibold">Trainings</h1>
+
+      {params.message && (
+        <p className="rounded bg-success-50 p-3 text-sm text-success-700">
+          {params.message}
+        </p>
+      )}
 
       {params.error && (
         <p className="rounded bg-error-50 p-3 text-sm text-error-700">

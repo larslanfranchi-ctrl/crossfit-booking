@@ -17,7 +17,7 @@ const ROLE_BADGE_STYLES = {
 export default async function NutzerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const params = await searchParams;
   const users = await getAllUsers();
@@ -26,6 +26,12 @@ export default async function NutzerPage({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Nutzerverwaltung</h1>
+
+      {params.message && (
+        <p className="rounded bg-success-50 p-3 text-sm text-success-700">
+          {params.message}
+        </p>
+      )}
 
       {params.error && (
         <p className="rounded bg-error-50 p-3 text-sm text-error-700">

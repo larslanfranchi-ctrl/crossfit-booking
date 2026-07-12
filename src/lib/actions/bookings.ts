@@ -5,27 +5,38 @@ import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { parseDateKey, startOfWeek, toDateKey } from "@/lib/date-utils";
 
-function buildKalenderUrl(day: string, error?: string) {
+type Feedback = { error?: string; message?: string };
+
+function buildKalenderUrl(day: string, feedback?: Feedback) {
   const params = new URLSearchParams();
   if (day) {
     params.set("day", day);
     const date = parseDateKey(day);
     if (date) params.set("week", toDateKey(startOfWeek(date)));
   }
-  if (error) params.set("error", error);
+  if (feedback?.error) params.set("error", feedback.error);
+  if (feedback?.message) params.set("message", feedback.message);
   const qs = params.toString();
   return qs ? `/kalender?${qs}` : "/kalender";
 }
 
-function buildReturnUrl(returnTo: string, day: string, error?: string) {
+function buildReturnUrl(returnTo: string, day: string, feedback?: Feedback) {
   if (returnTo === "home") {
-    return error ? `/home?error=${encodeURIComponent(error)}` : "/home";
+    const params = new URLSearchParams();
+    if (feedback?.error) params.set("error", feedback.error);
+    if (feedback?.message) params.set("message", feedback.message);
+    const qs = params.toString();
+    return qs ? `/home?${qs}` : "/home";
   }
   if (returnTo.startsWith("detail:")) {
     const slotId = returnTo.slice("detail:".length);
-    return `/kalender/${slotId}`;
+    const params = new URLSearchParams();
+    if (feedback?.error) params.set("error", feedback.error);
+    if (feedback?.message) params.set("message", feedback.message);
+    const qs = params.toString();
+    return qs ? `/kalender/${slotId}?${qs}` : `/kalender/${slotId}`;
   }
-  return buildKalenderUrl(day, error);
+  return buildKalenderUrl(day, feedback);
 }
 
 export async function bookSlot(formData: FormData) {
@@ -47,12 +58,18 @@ export async function bookSlot(formData: FormData) {
     .single();
 
   if (slotError || !slot) {
-    redirect(buildReturnUrl(returnTo, day, "Dieser Termin existiert nicht mehr."));
+    redirect(
+      buildReturnUrl(returnTo, day, {
+        error: "Dieser Termin existiert nicht mehr.",
+      }),
+    );
   }
 
   if (new Date(slot.start_time) < new Date()) {
     redirect(
-      buildReturnUrl(returnTo, day, "Dieser Termin liegt in der Vergangenheit."),
+      buildReturnUrl(returnTo, day, {
+        error: "Dieser Termin liegt in der Vergangenheit.",
+      }),
     );
   }
 
@@ -61,13 +78,13 @@ export async function bookSlot(formData: FormData) {
     .insert({ slot_id: slotId, user_id: user.id });
 
   if (error) {
-    redirect(buildReturnUrl(returnTo, day, error.message));
+    redirect(buildReturnUrl(returnTo, day, { error: error.message }));
   }
 
   revalidatePath("/kalender");
   revalidatePath("/kalender/[id]", "page");
   revalidatePath("/home");
-  redirect(buildReturnUrl(returnTo, day));
+  redirect(buildReturnUrl(returnTo, day, { message: "Termin gebucht." }));
 }
 
 export async function cancelBooking(formData: FormData) {
@@ -89,11 +106,11 @@ export async function cancelBooking(formData: FormData) {
     .eq("user_id", user.id);
 
   if (error) {
-    redirect(buildReturnUrl(returnTo, day, error.message));
+    redirect(buildReturnUrl(returnTo, day, { error: error.message }));
   }
 
   revalidatePath("/kalender");
   revalidatePath("/kalender/[id]", "page");
   revalidatePath("/home");
-  redirect(buildReturnUrl(returnTo, day));
+  redirect(buildReturnUrl(returnTo, day, { message: "Buchung storniert." }));
 }
