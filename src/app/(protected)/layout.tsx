@@ -1,6 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarCog, Dumbbell, LogOut, Tags, Users } from "lucide-react";
+import {
+  CalendarCog,
+  CreditCard,
+  Dumbbell,
+  LogOut,
+  Tags,
+  Ticket,
+  Users,
+} from "lucide-react";
 import { getUserRole } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { BottomNav } from "@/components/bottom-nav";
@@ -30,6 +38,14 @@ export default async function ProtectedLayout({
             </span>
           </span>
           <div className="flex items-center gap-4">
+            <Link
+              href="/abos"
+              title="Abos"
+              aria-label="Abos"
+              className="text-stone-500 hover:text-stone-900"
+            >
+              <Ticket size={20} />
+            </Link>
             {isAdmin && (
               <>
                 <Link
@@ -55,6 +71,14 @@ export default async function ProtectedLayout({
                   className="text-stone-500 hover:text-stone-900"
                 >
                   <Dumbbell size={20} />
+                </Link>
+                <Link
+                  href="/admin/abos"
+                  title="Abo-Verwaltung"
+                  aria-label="Abo-Verwaltung"
+                  className="text-stone-500 hover:text-stone-900"
+                >
+                  <CreditCard size={20} />
                 </Link>
                 <Link
                   href="/admin/nutzer"

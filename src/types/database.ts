@@ -110,6 +110,40 @@ export type Database = {
         };
         Relationships: [];
       };
+      memberships: {
+        Row: {
+          id: number;
+          name: string;
+          duration: string;
+          check_ins: string;
+          classes: string;
+          price: string;
+          price_note: string;
+          is_active: boolean;
+          sort_order: number;
+        };
+        Insert: {
+          name: string;
+          duration: string;
+          check_ins: string;
+          classes?: string;
+          price: string;
+          price_note?: string;
+          is_active?: boolean;
+          sort_order?: number;
+        };
+        Update: {
+          name?: string;
+          duration?: string;
+          check_ins?: string;
+          classes?: string;
+          price?: string;
+          price_note?: string;
+          is_active?: boolean;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
       bookings: {
         Row: {
           id: number;

@@ -564,6 +564,183 @@ export async function deleteTraining(formData: FormData) {
   redirect(successUrl("/admin/trainings", "Training gelöscht."));
 }
 
+function parseMembershipForm(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  const duration = String(formData.get("duration") ?? "").trim();
+  const checkIns = String(formData.get("checkIns") ?? "").trim();
+  const classes = String(formData.get("classes") ?? "").trim();
+  const price = String(formData.get("price") ?? "").trim();
+  const priceNoteRaw = String(formData.get("priceNote") ?? "").trim();
+  const priceNote = priceNoteRaw === "pro Monat" ? "pro Monat" : "einmalig";
+
+  return {
+    name,
+    duration,
+    check_ins: checkIns,
+    classes,
+    price,
+    price_note: priceNote,
+    isValid: Boolean(name && duration && checkIns && price),
+  };
+}
+
+export async function createMembership(formData: FormData) {
+  const supabase = await createClient();
+  const { isValid, ...values } = parseMembershipForm(formData);
+
+  if (!isValid) {
+    redirect(
+      buildUrl(
+        "/admin/abos",
+        "Name, Gültigkeit, Check-ins und Preis dürfen nicht leer sein.",
+      ),
+    );
+  }
+
+  // Neues Abo ans Ende der manuellen Reihenfolge hängen.
+  const { data: last, error: lastError } = await supabase
+    .from("memberships")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (lastError) {
+    redirect(buildUrl("/admin/abos", lastError.message));
+  }
+
+  const { error } = await supabase
+    .from("memberships")
+    .insert({ ...values, sort_order: (last?.sort_order ?? 0) + 1 });
+
+  if (error) {
+    redirect(buildUrl("/admin/abos", error.message));
+  }
+
+  revalidatePath("/admin/abos");
+  revalidatePath("/abos");
+  redirect(successUrl("/admin/abos", "Abo angelegt."));
+}
+
+export async function updateMembership(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const supabase = await createClient();
+  const { isValid, ...values } = parseMembershipForm(formData);
+
+  if (!isValid) {
+    redirect(
+      buildUrl(
+        "/admin/abos",
+        "Name, Gültigkeit, Check-ins und Preis dürfen nicht leer sein.",
+      ),
+    );
+  }
+
+  const { error } = await supabase
+    .from("memberships")
+    .update(values)
+    .eq("id", id);
+
+  if (error) {
+    redirect(buildUrl("/admin/abos", error.message));
+  }
+
+  revalidatePath("/admin/abos");
+  revalidatePath("/abos");
+  redirect(successUrl("/admin/abos", "Abo gespeichert."));
+}
+
+export async function toggleMembership(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const newActive = formData.get("newActive") === "true";
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("memberships")
+    .update({ is_active: newActive })
+    .eq("id", id);
+
+  if (error) {
+    redirect(buildUrl("/admin/abos", error.message));
+  }
+
+  revalidatePath("/admin/abos");
+  revalidatePath("/abos");
+  redirect(
+    successUrl(
+      "/admin/abos",
+      newActive ? "Abo aktiviert." : "Abo deaktiviert.",
+    ),
+  );
+}
+
+export async function deleteMembership(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("memberships").delete().eq("id", id);
+
+  if (error) {
+    redirect(buildUrl("/admin/abos", error.message));
+  }
+
+  revalidatePath("/admin/abos");
+  revalidatePath("/abos");
+  redirect(successUrl("/admin/abos", "Abo gelöscht."));
+}
+
+export async function moveMembership(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const direction = String(formData.get("direction") ?? "");
+  const supabase = await createClient();
+
+  if (!Number.isFinite(id) || (direction !== "up" && direction !== "down")) {
+    redirect(buildUrl("/admin/abos", "Ungültige Eingabe."));
+  }
+
+  const { data: memberships, error: listError } = await supabase
+    .from("memberships")
+    .select("id, sort_order")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (listError) {
+    redirect(buildUrl("/admin/abos", listError.message));
+  }
+
+  const list = memberships ?? [];
+  const index = list.findIndex((m) => m.id === id);
+  const neighborIndex = direction === "up" ? index - 1 : index + 1;
+
+  // Am Rand (schon ganz oben/unten) oder Abo nicht gefunden: nichts tun.
+  if (index === -1 || neighborIndex < 0 || neighborIndex >= list.length) {
+    redirect("/admin/abos");
+  }
+
+  const current = list[index];
+  const neighbor = list[neighborIndex];
+
+  // sort_order der beiden Nachbarn tauschen.
+  const [{ error: e1 }, { error: e2 }] = await Promise.all([
+    supabase
+      .from("memberships")
+      .update({ sort_order: neighbor.sort_order })
+      .eq("id", current.id),
+    supabase
+      .from("memberships")
+      .update({ sort_order: current.sort_order })
+      .eq("id", neighbor.id),
+  ]);
+
+  if (e1 || e2) {
+    redirect(buildUrl("/admin/abos", (e1 ?? e2)!.message));
+  }
+
+  revalidatePath("/admin/abos");
+  revalidatePath("/abos");
+  redirect("/admin/abos");
+}
+
 export async function setUserRole(formData: FormData) {
   const userId = String(formData.get("userId") ?? "");
   const newRole = String(formData.get("newRole") ?? "");
