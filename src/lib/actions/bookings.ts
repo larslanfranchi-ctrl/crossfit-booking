@@ -51,6 +51,74 @@ function buildReturnUrl(returnTo: string, day: string, feedback?: Feedback) {
   return buildKalenderUrl(day, feedback);
 }
 
+// Varianten für Client-Aufrufe (Event-Handler statt Formular): geben das
+// Feedback als Rückgabewert zurück statt per Redirect + searchParams, damit
+// der Kalender optimistisch aktualisieren kann und kein voller Seitenwechsel
+// nötig ist. revalidatePath sorgt trotzdem dafür, dass die Server-Daten der
+// betroffenen Routen beim nächsten Render frisch sind.
+export async function bookSlotAction(slotId: number): Promise<Feedback> {
+  const supabase = await createClient();
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: slot, error: slotError } = await supabase
+    .from("appointment_slots")
+    .select("start_time")
+    .eq("id", slotId)
+    .single();
+
+  if (slotError || !slot) {
+    return { error: "Dieser Termin existiert nicht mehr." };
+  }
+
+  if (new Date(slot.start_time) < new Date()) {
+    return { error: "Dieser Termin liegt in der Vergangenheit." };
+  }
+
+  const { error } = await supabase
+    .from("bookings")
+    .insert({ slot_id: slotId, user_id: user.id });
+
+  if (error) {
+    return { error: bookingErrorMessage(error) };
+  }
+
+  revalidatePath("/kalender");
+  revalidatePath("/kalender/[id]", "page");
+  revalidatePath("/home");
+  return { message: "Termin gebucht." };
+}
+
+export async function cancelBookingAction(slotId: number): Promise<Feedback> {
+  const supabase = await createClient();
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase
+    .from("bookings")
+    .delete()
+    .eq("slot_id", slotId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return {
+      error:
+        "Die Stornierung konnte nicht durchgeführt werden. Bitte versuche es erneut.",
+    };
+  }
+
+  revalidatePath("/kalender");
+  revalidatePath("/kalender/[id]", "page");
+  revalidatePath("/home");
+  return { message: "Buchung storniert." };
+}
+
 export async function bookSlot(formData: FormData) {
   const slotId = Number(formData.get("slotId"));
   const day = String(formData.get("day") ?? "");
