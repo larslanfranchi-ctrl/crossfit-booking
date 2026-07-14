@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Crossfit Booking",
+  title: "Lionsoul Performance",
   description: "Termine buchen und verwalten",
 };
 

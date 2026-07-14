@@ -7,14 +7,19 @@ import { CapacityRing, type CapacityTone } from "@/components/capacity-ring";
 import { RichTextContent } from "@/components/rich-text-content";
 import { formatDate, formatTime, toDateKey } from "@/lib/date-utils";
 
-const CARD_STYLES: Record<CapacityTone, string> = {
-  available: "bg-success-500 text-white",
-  booked: "bg-primary-600 text-white",
-  full: "bg-accent-900 text-white",
-  past: "bg-stone-100 text-stone-500",
-};
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const second = parts[1]?.[0] ?? "";
+  return (first + second).toUpperCase() || "?";
+}
 
-const ACTION_BUTTON_STYLE = "bg-white/25 text-white hover:bg-white/40";
+const CARD_STYLES: Record<CapacityTone, string> = {
+  available: "border border-stone-200 bg-stone-100",
+  booked: "border border-primary-600 bg-stone-100",
+  full: "border border-stone-200 bg-stone-100",
+  past: "border border-stone-200 bg-stone-100 text-stone-500",
+};
 
 export default async function SlotDetailPage({
   params,
@@ -72,7 +77,7 @@ export default async function SlotDetailPage({
               {formatDate(new Date(slot.start_time))} ·{" "}
               {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
             </div>
-            <div className="opacity-90">
+            <div className="mt-0.5 text-sm font-bold uppercase tracking-wide opacity-90">
               {slot.courseTypeName ?? "Unbekannte Kursart"}
             </div>
           </div>
@@ -90,7 +95,7 @@ export default async function SlotDetailPage({
               <input type="hidden" name="returnTo" value={`detail:${slot.id}`} />
               <ConfirmSubmitButton
                 confirmMessage="Buchung wirklich stornieren?"
-                className={`rounded px-4 py-2 text-sm ${ACTION_BUTTON_STYLE}`}
+                className="rounded border border-primary-600 px-4 py-2 text-sm font-semibold text-primary-600 hover:bg-primary-50"
               >
                 Absagen
               </ConfirmSubmitButton>
@@ -110,7 +115,7 @@ export default async function SlotDetailPage({
               <input type="hidden" name="returnTo" value={`detail:${slot.id}`} />
               <button
                 type="submit"
-                className={`rounded px-4 py-2 text-sm ${ACTION_BUTTON_STYLE}`}
+                className="rounded bg-primary-600 px-4 py-2 text-sm font-semibold text-black hover:bg-primary-700"
               >
                 Buchen
               </button>
@@ -121,7 +126,7 @@ export default async function SlotDetailPage({
 
       <div className="mt-6 space-y-4">
         <div>
-          <h2 className="mb-1 text-sm font-semibold text-stone-700">
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500">
             Kursleiter:in
           </h2>
           <p className="text-sm text-stone-600">
@@ -131,7 +136,7 @@ export default async function SlotDetailPage({
 
         {slot.description && (
           <div>
-            <h2 className="mb-1 text-sm font-semibold text-stone-700">
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500">
               Beschreibung
             </h2>
             <RichTextContent html={slot.description} />
@@ -140,7 +145,7 @@ export default async function SlotDetailPage({
 
         {slot.trainingName && (
           <div>
-            <h2 className="mb-1 text-sm font-semibold text-stone-700">
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500">
               Training: {slot.trainingName}
             </h2>
             {slot.trainingContent && (
@@ -150,17 +155,25 @@ export default async function SlotDetailPage({
         )}
 
         <div>
-          <h2 className="mb-1 text-sm font-semibold text-stone-700">
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500">
             Teilnehmer:innen ({slot.participantNames.length}/{slot.capacity})
           </h2>
           {slot.participantNames.length === 0 ? (
             <p className="text-sm text-stone-400">Noch niemand angemeldet.</p>
           ) : (
-            <ul className="text-sm text-stone-600">
+            <div className="flex flex-col gap-2">
               {slot.participantNames.map((name, i) => (
-                <li key={i}>{name}</li>
+                <div
+                  key={i}
+                  className="flex items-center gap-2.5 text-sm text-stone-600"
+                >
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-stone-200 bg-stone-100 text-[10px] font-bold text-stone-400">
+                    {initials(name)}
+                  </span>
+                  {name}
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </div>

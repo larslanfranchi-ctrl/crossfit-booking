@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CalendarCog, Dumbbell, LogOut, Tags, Users } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
@@ -26,7 +27,19 @@ export default async function ProtectedLayout({
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-stone-200 px-6 py-4">
         <nav className="mx-auto flex max-w-5xl items-center justify-between">
-          <span className="font-semibold">Crossfit Booking</span>
+          <span className="flex items-center gap-2.5">
+            <Image
+              src="/lionsoul-mark.png"
+              alt=""
+              width={305}
+              height={322}
+              priority
+              className="h-8 w-auto"
+            />
+            <span className="text-sm font-bold uppercase tracking-wider">
+              Lionsoul Performance
+            </span>
+          </span>
           <div className="flex items-center gap-4">
             {isAdmin && (
               <>

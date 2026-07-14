@@ -1,15 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf7f2;
-  --foreground: #3a3530;
-  /* Die App hat aktuell nur ein festes, helles Theme (keine dark:-Varianten).
-     Ohne diese Zeile wenden manche mobile Browser (v.a. Android Chrome mit
-     "Dunkles Design erzwingen") ihre eigene automatische Dunkelmodus-
-     Invertierung auf die Seite an - das führt zu Kontrastfehlern (Text/Icons
-     in exakt derselben Farbe wie der Hintergrund), weil der Browser Farben
-     rät statt das bewusst gewählte Farbschema zu respektieren. */
-  color-scheme: light;
+  /* Lionsoul Performance — tiefes Schwarz, hoher Kontrast, Gelb als Akzent. */
+  --background: #0a0a0b;
+  --foreground: #fafafa;
+  /* Die App committet sich bewusst auf ein dunkles Theme (kein Light-Modus).
+     color-scheme: dark verhindert, dass mobile Browser eigene Invertierungen
+     anwenden, und sorgt für dunkle Formular-Controls/Scrollbars. */
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -18,35 +16,66 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Sage & Sand palette */
-  --color-surface: #f0ebe1;
+  /* Flächen */
+  --color-surface: #141416;
 
-  --color-primary-50: #e9eee9;
-  --color-primary-500: #6b8e76;
-  --color-primary-600: #6b8e76;
-  --color-primary-700: #55725f;
+  /* Marken-Gelb (primary = Aktionen & Akzent). Text auf primary ist schwarz. */
+  --color-primary-50: #201d08;
+  --color-primary-500: #ffe01b;
+  --color-primary-600: #ffe01b;
+  --color-primary-700: #e6c200;
 
-  --color-success-50: #eef3ec;
-  --color-success-500: #7a9471;
-  --color-success-600: #587a4c;
-  --color-success-700: #46613c;
+  /* Status "frei" / Erfolg (Grün) */
+  --color-success-50: #10231a;
+  --color-success-500: #6fcf97;
+  --color-success-600: #6fcf97;
+  --color-success-700: #8fe0ad;
 
-  --color-accent-200: #eac4b3;
-  --color-accent-400: #c97b5a;
-  --color-accent-600: #a85736;
-  --color-accent-900: #6b3320;
+  /* Status "ausgebucht" (Rot) — ersetzt die frühere Terrakotta-Akzentfarbe */
+  --color-accent-200: #e0565b;
+  --color-accent-400: #e0565b;
+  --color-accent-600: #e0565b;
+  --color-accent-900: #3a1518;
 
-  --color-error-50: #fbeeec;
-  --color-error-100: #f5ded8;
-  --color-error-200: #e7c2b7;
-  --color-error-700: #96422f;
+  --color-error-50: #2a1113;
+  --color-error-100: #3a1518;
+  --color-error-200: #e0565b;
+  --color-error-700: #f2868a;
 
-  --color-warning-50: #fbf3e4;
-  --color-warning-700: #92661f;
+  --color-warning-50: #2a2205;
+  --color-warning-700: #f5d06a;
+
+  /* Neutral-Rampe (Stone) auf Dark invertiert: stone-50 = dunkelste Fläche,
+     stone-900 = hellster Text. Dadurch werden die bestehenden stone-Utilities
+     im gesamten Projekt automatisch dunkel-tauglich. Ausnahme: die Bottom-Nav
+     setzt ihre dunkle Fläche jetzt explizit (nicht mehr über stone-900). */
+  --color-stone-50: #141416;
+  --color-stone-100: #1d1d20;
+  --color-stone-200: #2a2a2e;
+  --color-stone-300: #3a3a40;
+  --color-stone-400: #8a8a8f;
+  --color-stone-500: #a1a1a6;
+  --color-stone-600: #c4c4c8;
+  --color-stone-700: #dcdcdf;
+  --color-stone-800: #ededef;
+  --color-stone-900: #fafafa;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Dunkle Formularfelder: einheitliche Fläche + lesbare Ränder auf Schwarz.
+   Checkboxen/Radios ausgenommen (behalten das native Aussehen). */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  background-color: var(--color-surface);
+  color: var(--foreground);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-stone-400);
 }

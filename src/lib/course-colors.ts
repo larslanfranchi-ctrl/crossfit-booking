@@ -1,21 +1,22 @@
 // Automatische, stabile Farbzuordnung pro Kursart. Jede Kursart wird anhand
 // ihrer ID einer Farbe aus einer festen Palette zugeordnet - so bekommt jede
 // Kursart eine eigene Farbe, ohne dass Admins etwas pflegen müssen. Die Farben
-// sind dunkel genug, um als fetter Text auf dem hellen App-Hintergrund
-// (#faf7f2) gut lesbar zu sein, und harmonieren mit der "Sage & Sand"-Palette.
+// sind hell/kräftig genug, um als fetter Text auf dem dunklen App-Hintergrund
+// (#0a0a0b) gut lesbar zu sein. Rein-Gelb (Marke) und Rot (Status "ausgebucht")
+// sind bewusst ausgespart, damit die Kursfarben nicht mit ihnen kollidieren.
 //
 // Tailwind kann keine dynamischen Klassennamen zur Laufzeit erzeugen, daher
 // werden diese Farben als Inline-Style (Hex) gesetzt.
 
 const COURSE_COLORS = [
-  "#6b8e76", // Salbeigrün
-  "#a85736", // Terrakotta
-  "#4a6fa5", // Blau
-  "#8a5a83", // Pflaume
-  "#2f7d7a", // Petrol
-  "#9a7d1a", // Senf/Oliv
-  "#a03d5a", // Himbeere
-  "#566246", // Dunkeloliv
+  "#8fd9a8", // Mint
+  "#7fb2f0", // Hellblau
+  "#c89be0", // Flieder
+  "#5fc9c4", // Türkis
+  "#f0a868", // Orange
+  "#f08fb0", // Rosa
+  "#a8c97f", // Limette
+  "#d8c27a", // Sand
 ] as const;
 
 export function courseColor(courseTypeId: number): string {

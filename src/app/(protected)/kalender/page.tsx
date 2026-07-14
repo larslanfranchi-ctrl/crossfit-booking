@@ -36,13 +36,6 @@ const STATUS_TEXT_COLOR: Record<Tone, string> = {
   booked: "text-primary-600",
 };
 
-const ACCENT_BAR_COLOR: Record<Tone, string> = {
-  available: "bg-success-500",
-  full: "bg-accent-400",
-  past: "bg-stone-300",
-  booked: "bg-primary-600",
-};
-
 export default async function KalenderPage({
   searchParams,
 }: {
@@ -97,14 +90,14 @@ export default async function KalenderPage({
     <div>
       <div className="mb-4 flex items-center justify-between">
         <details open={isPickerOpen} className="relative">
-          <summary className="flex cursor-pointer list-none items-center gap-1 text-lg font-medium capitalize text-stone-800 [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center gap-1 text-lg font-bold uppercase tracking-wide text-stone-800 [&::-webkit-details-marker]:hidden">
             {weekStart.toLocaleDateString("de-DE", {
               month: "long",
               year: "numeric",
             })}
             <span className="text-xs text-stone-400">▾</span>
           </summary>
-          <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-stone-200 bg-white p-3 shadow-lg">
+          <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-stone-200 bg-stone-100 p-3 shadow-lg">
             <div className="mb-2 flex items-center justify-between">
               <Link
                 href={`/kalender?week=${weekParam}&day=${selectedDayKey}&picker=open&pickerMonth=${prevPickerMonth}`}
@@ -139,7 +132,7 @@ export default async function KalenderPage({
                     href={`/kalender?week=${toDateKey(startOfWeek(date))}&day=${key}`}
                     className={`flex h-8 w-8 items-center justify-center rounded-full text-xs ${
                       isSelectedPickerDay
-                        ? "bg-primary-600 text-white"
+                        ? "bg-primary-600 text-black"
                         : inCurrentMonth
                           ? "text-stone-700 hover:bg-stone-100"
                           : "text-stone-300 hover:bg-stone-50"
@@ -198,7 +191,7 @@ export default async function KalenderPage({
                 <span
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
                     isSelected
-                      ? "bg-primary-600 text-white"
+                      ? "bg-primary-600 text-black"
                       : isToday
                         ? "text-primary-600 ring-1 ring-primary-500"
                         : "text-stone-700"
@@ -235,7 +228,7 @@ export default async function KalenderPage({
         </p>
       )}
 
-      <div className="divide-y divide-stone-100">
+      <div className="space-y-3">
         {selectedDaySlots.length === 0 && (
           <p className="py-6 text-sm text-stone-400">
             Keine Termine an diesem Tag.
@@ -252,23 +245,26 @@ export default async function KalenderPage({
               : isFull
                 ? "full"
                 : "available";
+          const stripeColor =
+            tone === "past" ? "#3a3a40" : courseColor(slot.courseTypeId);
 
           return (
-            <div key={slot.id} className="flex items-center gap-3 py-4">
-              <span
-                className={`h-10 w-1.5 shrink-0 rounded-full ${ACCENT_BAR_COLOR[tone]}`}
-              />
+            <div
+              key={slot.id}
+              className="flex items-center gap-3 rounded-xl border border-stone-200 border-l-4 bg-stone-100 py-3 pl-3 pr-3"
+              style={{ borderLeftColor: stripeColor }}
+            >
               <Link href={`/kalender/${slot.id}`} className="min-w-0 flex-1">
                 <div
-                  className={`text-xs font-medium ${STATUS_TEXT_COLOR[tone]}`}
+                  className={`text-[10px] font-extrabold uppercase tracking-widest ${STATUS_TEXT_COLOR[tone]}`}
                 >
                   {STATUS_LABEL[tone]}
                 </div>
-                <div className="font-semibold text-stone-900">
+                <div className="font-semibold tabular-nums text-stone-900">
                   {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
                 </div>
                 <div
-                  className="truncate text-sm font-bold"
+                  className="truncate text-sm font-bold uppercase tracking-wide"
                   style={{
                     color: tone === "past" ? undefined : courseColor(slot.courseTypeId),
                   }}
@@ -276,7 +272,7 @@ export default async function KalenderPage({
                   {slot.courseTypeName ?? "Unbekannte Kursart"}
                 </div>
               </Link>
-              <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">
+              <span className="shrink-0 rounded-full bg-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600">
                 {slot.bookedCount}/{slot.capacity}
               </span>
               {tone === "booked" ? (
@@ -286,7 +282,7 @@ export default async function KalenderPage({
                   <ConfirmSubmitButton
                     confirmMessage="Buchung wirklich stornieren?"
                     aria-label="Absagen"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white hover:bg-primary-700"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-600 text-black hover:bg-primary-700"
                   >
                     <X size={18} strokeWidth={2.5} />
                   </ConfirmSubmitButton>

@@ -178,7 +178,7 @@ export default async function AdminPage({
           <div className="col-span-2 flex items-end gap-3 sm:col-span-4">
             <button
               type="submit"
-              className="rounded bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
+              className="rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
             >
               {isEditing ? "Änderungen speichern" : "Termin anlegen"}
             </button>
@@ -359,7 +359,7 @@ export default async function AdminPage({
             <div className="col-span-2 flex items-end sm:col-span-4">
               <button
                 type="submit"
-                className="rounded bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
+                className="rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
               >
                 Serientermin anlegen
               </button>
@@ -405,7 +405,7 @@ export default async function AdminPage({
             <div className="col-span-2">
               <button
                 type="submit"
-                className="rounded bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
+                className="rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
               >
                 Tag kopieren
               </button>

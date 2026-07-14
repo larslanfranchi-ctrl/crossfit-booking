@@ -33,7 +33,7 @@ export function CreateSlotTabs({
             onClick={() => setActiveTab(tab.key)}
             className={`-mb-px rounded-t px-4 py-2 text-sm font-medium ${
               activeTab === tab.key
-                ? "border border-b-0 border-stone-200 bg-white text-primary-700"
+                ? "border border-b-0 border-stone-200 bg-stone-100 text-primary-600"
                 : "border border-transparent text-stone-500 hover:text-stone-700"
             }`}
           >

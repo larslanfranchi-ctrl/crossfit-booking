@@ -50,7 +50,7 @@ export default async function LoginPage({
         </div>
         <button
           type="submit"
-          className="w-full rounded bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
+          className="w-full rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
         >
           Anmelden
         </button>

@@ -1,22 +1,22 @@
-# Fachkonzept: Crossfit Booking – Terminbuchung (Web-App)
+# Fachkonzept: Lionsoul Performance – Terminbuchung (Web-App)
 
-Produkt: **Crossfit Booking** (CrossFit-Terminbuchung; im Code aktuell noch »Surf Booking«, wird auf »Crossfit Booking« umbenannt)
+Produkt: **Lionsoul Performance** (Terminbuchung für die Functional-Fitness-Box; im Code aktuell noch »Surf Booking«, wird auf »Lionsoul Performance« umbenannt). **Hinweis:** Der markenrechtlich geschützte Begriff »CrossFit« wird als Produkt-/App-Name bewusst nicht verwendet.
 Projekt: `C:\Users\Lars\OneDrive\Dokumente\termin-buchung`
 Stack: Next.js 16 (React 19) + Supabase (Postgres, Auth, RLS)
-Stand: 2026-07-14 (CrossFit-Rebranding, siehe Änderungshistorie v4)
+Stand: 2026-07-14 (Rebranding auf Lionsoul Performance, siehe Änderungshistorie v4)
 
 **Änderungshistorie:**
 - v1: Erstanalyse auf Basis des bestehenden Codes (Ist-Stand, generische Slot-Buchung).
 - v2: Entscheidungen 1–5 der ersten Stakeholder-Rückmeldung übernommen (Kursart/Level, keine Kursleiter-Rolle, automatische Warteliste, 24h-Stornofrist, In-App-Zahlungen). Frage zur Rollenvergabe laienverständlich neu gestellt inkl. Vorschlag.
 - v3: Alle verbliebenen offenen Fragen (7.1 und 7.2, Punkte 1–11) durch den Stakeholder final beantwortet und als fixierte Anforderungen übernommen. User Stories entsprechend aktualisiert/ergänzt. Fachkonzept ist damit inhaltlich vollständig geklärt; verbleibend sind nur noch wenige kleinteilige Umsetzungsdetails.
-- v4: **Rebranding von Yoga-Studio auf CrossFit.** Produktname auf »Crossfit Booking« festgelegt (im Code bislang »Surf Booking«, wird umbenannt). Fachliche Domäne und Begriffe entsprechend angepasst (Studio → Box, Yogalehrer:in → Coach). Der Funktionsumfang (Ist/Fixiert/Offen) bleibt inhaltlich unverändert; es handelt sich um eine reine Umbenennung der Domäne und des Produktnamens.
+- v4: **Rebranding von Yoga-Studio auf die Functional-Fitness-Box »Lionsoul Performance«.** Produktname auf **Lionsoul Performance** festgelegt (im Code bislang »Surf Booking«, wird umbenannt). Der markenrechtlich geschützte Begriff »CrossFit« wird als Produkt-/App-Name bewusst nicht verwendet. Fachliche Begriffe angepasst (Studio → Box, Yogalehrer:in → Coach). Der Funktionsumfang (Ist/Fixiert/Offen) bleibt inhaltlich unverändert; es handelt sich um eine reine Umbenennung der Domäne und des Produktnamens.
 - v5 (dieses Dokument): **Nachdokumentation einer bereits im Code umgesetzten Änderung — das Konzept »Level« wurde vollständig entfernt** (DB-Migration `033_remove_levels.sql`). Kurstermine haben nur noch eine **Kursart** als Pflichtangabe; ein separates Level gibt es nicht mehr. Betroffene Stellen (Abschnitt 3.2 sowie US-07, US-08, US-13, US-16, US-17, US-18) wurden bereinigt. Historische Erwähnungen in der Änderungshistorie (v2) bleiben zur Nachvollziehbarkeit bestehen.
 
 ---
 
 ## 1. Ist-Stand (aus Code/DB-Schema abgeleitet, bestätigt durch Repo)
 
-Das Projekt ist bereits eine funktionierende, aber sehr generische **Slot-Buchungs-App**, noch nicht spezifisch für CrossFit ausgeprägt. Vorhanden:
+Das Projekt ist bereits eine funktionierende, aber sehr generische **Slot-Buchungs-App**, noch nicht spezifisch für die Functional-Fitness-Box ausgeprägt. Vorhanden:
 
 - **Auth**: E-Mail/Passwort-Login und -Registrierung via Supabase Auth (`src/app/login`, `src/app/register`, `src/lib/actions/auth.ts`). E-Mail-Bestätigung wird erwartet (Meldungstext nach Signup). Passwort-Reset-UI und Profilbearbeitung fehlen noch (jetzt als Go-Live-Anforderung fixiert, siehe US-04/US-05).
 - **Rollen**: drei Rollen in `profiles.role` — `admin`, `instructor` (Kursleiter:in) und `user` (`src/types/database.ts`, `supabase/sql/001_profiles.sql`, `021_profiles_role_instructor.sql`). **Geändert 2026-07-07:** ursprünglich "bleibt bei zwei Rollen" fixiert, dann auf Wunsch des Stakeholders um `instructor` erweitert. Rollenvergabe (inkl. Kursleiter:in) erfolgt über ein Auswahlfeld in der Admin-UI (`/admin/nutzer`, siehe US-19), statt wie ursprünglich nur per manuellem Datenbankbefehl (`011_set_first_admin.sql.example`).

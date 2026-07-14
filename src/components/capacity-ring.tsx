@@ -1,9 +1,9 @@
 export type CapacityTone = "available" | "full" | "booked" | "past";
 
 const RING_STYLES: Record<CapacityTone, { track: string; progress: string }> = {
-  available: { track: "stroke-white/30", progress: "stroke-white" },
-  booked: { track: "stroke-white/30", progress: "stroke-white" },
-  full: { track: "stroke-white/20", progress: "stroke-error-200" },
+  available: { track: "stroke-white/12", progress: "stroke-success-500" },
+  booked: { track: "stroke-white/12", progress: "stroke-primary-500" },
+  full: { track: "stroke-white/12", progress: "stroke-accent-400" },
   past: { track: "stroke-stone-300", progress: "stroke-stone-500" },
 };
 
@@ -55,7 +55,7 @@ export function CapacityRing({
         y="20"
         textAnchor="middle"
         fontSize="9"
-        className={tone === "past" ? "fill-stone-600" : "fill-white"}
+        className={tone === "past" ? "fill-stone-500" : "fill-white"}
       >
         {booked}/{capacity}
       </text>

@@ -1,6 +1,6 @@
-# Crossfit Booking
+# Lionsoul Performance
 
-CrossFit-Box-Buchungs-App: Nutzer melden sich an und buchen freie Kurstermine
+Buchungs-App für die Lionsoul-Performance-Box: Nutzer melden sich an und buchen freie Kurstermine
 über eine Wochenkalender-Ansicht, Admins verwalten Kurse, Kursarten/Level und
 Nutzerrollen. Fachliche Anforderungen: [`docs/fachkonzept.md`](docs/fachkonzept.md).
 

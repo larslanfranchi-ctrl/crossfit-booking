@@ -57,7 +57,7 @@ export function CreateTrainingTile({
         </div>
         <button
           type="submit"
-          className="rounded bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
+          className="rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
         >
           Anlegen
         </button>
