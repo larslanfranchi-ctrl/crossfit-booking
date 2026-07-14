@@ -10,14 +10,17 @@ Stories). **Bisher umgesetzt:**
   Termine bearbeiten, Admin-Rollenvergabe per Schalter.
 - Phase 2 – Konto: Passwort-Reset per E-Mail, Profilbearbeitung (Name,
   Telefonnummer).
+- Abo-Angebote: Mitglieder sehen unter `/abos` das aktuelle Angebot
+  (Preise, Kontingente, enthaltene Kurse), Admins pflegen es unter
+  `/admin/abos` — reine Anzeige, keine Buchungs-/Zahlungslogik.
 
-**Noch offen:** Warteliste, Zahlungen/Mitgliedschaften, Admin-Reporting.
+**Noch offen:** Warteliste, Zahlungen (Abos kaufen/zuordnen), Admin-Reporting.
 
 ## Setup
 
 1. Ein neues Projekt auf [supabase.com](https://supabase.com) anlegen.
 2. Im Supabase SQL-Editor die Dateien unter `supabase/sql/` **in numerischer
-   Reihenfolge** ausführen (001 bis 020, `.sql.example`-Dateien überspringen).
+   Reihenfolge** ausführen (`.sql.example`-Dateien überspringen).
 3. `.env.example` nach `.env.local` kopieren und `NEXT_PUBLIC_SUPABASE_URL` /
    `NEXT_PUBLIC_SUPABASE_ANON_KEY` aus den Supabase-Projekteinstellungen
    (Project Settings → API) eintragen.
@@ -51,8 +54,10 @@ werden.
 
 - **Admin**: `/admin` (Termine anlegen/bearbeiten/löschen, Einzel- und
   Serientermine), `/admin/stammdaten` (Kursarten/Level verwalten),
-  `/admin/nutzer` (Admin-Rechte per Schalter vergeben/entziehen).
-- **Benutzer**: `/kalender` (Wochenansicht, Termine buchen/stornieren).
+  `/admin/trainings` (Trainingsinhalte), `/admin/abos` (Abo-Angebot
+  pflegen), `/admin/nutzer` (Admin-Rechte per Schalter vergeben/entziehen).
+- **Benutzer**: `/kalender` (Wochenansicht, Termine buchen/stornieren),
+  `/abos` (Abo-Angebot einsehen).
 
 Rollen werden nicht per Self-Service vergeben - ein neuer Account ist immer
 `user`. Der letzte verbleibende Admin kann nicht herabgestuft werden
