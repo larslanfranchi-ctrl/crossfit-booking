@@ -40,6 +40,13 @@ Stories). **Bisher umgesetzt:**
    bevor unter `/admin` Termine erstellt werden können (beides ist Pflicht
    pro Termin).
 
+## Deployment
+
+Das Projekt ist auf Vercel gehostet und mit dem GitHub-Repo verknüpft. Ein
+`git push` auf `main` löst automatisch ein Deployment aus — manuelle Deploys
+per Vercel CLI (`vercel deploy`) sind nicht nötig und sollen nicht verwendet
+werden.
+
 ## Rollen
 
 - **Admin**: `/admin` (Termine anlegen/bearbeiten/löschen, Einzel- und
