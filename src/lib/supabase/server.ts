@@ -29,14 +29,43 @@ export async function createClient() {
   );
 }
 
-// auth.getUser() ist ein echter Netzwerk-Roundtrip zum Supabase-Auth-Server.
-// React.cache() dedupliziert ihn innerhalb eines einzelnen Request-Renders,
-// damit Layout und mehrere Data-Fetcher pro Seitenaufruf nicht je einzeln
-// dagegen validieren.
-export const getUser = cache(async () => {
+// Validierte JWT-Claims der Session. Anders als auth.getUser() (immer ein
+// Netzwerk-Roundtrip zum Auth-Server) prüft auth.getClaims() die Signatur
+// lokal gegen den gecachten JWKS, sobald das Supabase-Projekt asymmetrische
+// JWT-Signing-Keys nutzt (siehe supabase/sql/035_custom_access_token_hook.sql).
+// Mit Legacy-HS256-Keys fällt getClaims() intern auf die Server-Validierung
+// zurück - funktioniert also in beiden Fällen. React.cache() dedupliziert
+// innerhalb eines Request-Renders.
+export const getClaims = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data?.claims) return null;
+  return data.claims;
+});
+
+// Minimale Nutzer-Identität aus den validierten Token-Claims.
+export const getUser = cache(async () => {
+  const claims = await getClaims();
+  if (!claims) return null;
+  return {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : null,
+  };
+});
+
+// App-Rolle ("admin" | "instructor" | "user"): bevorzugt aus dem JWT-Claim
+// "user_role" (gesetzt vom Custom Access Token Hook), sonst Fallback auf eine
+// profiles-Query, solange der Hook im Supabase-Dashboard nicht aktiviert ist.
+export const getUserRole = cache(async (): Promise<string | null> => {
+  const claims = await getClaims();
+  if (!claims) return null;
+  if (typeof claims.user_role === "string") return claims.user_role;
+
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", claims.sub)
+    .single();
+  return profile?.role ?? null;
 });

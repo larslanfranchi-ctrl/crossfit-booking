@@ -104,16 +104,23 @@ export async function getAllUsers(): Promise<AdminUser[]> {
 
 export async function getSlotsWithParticipants(
   when: "upcoming" | "past",
+  // Ohne Limit wächst die Liste vergangener Termine (inkl. Buchungen und
+  // Profilen) unbegrenzt mit - die Admin-Seite würde jede Woche langsamer.
+  limit?: number,
 ): Promise<SlotWithParticipants[]> {
   const supabase = await createClient();
 
   const now = new Date().toISOString();
-  const slotsQuery = supabase
+  let slotsQuery = supabase
     .from("appointment_slots")
     .select(
       "id, start_time, end_time, capacity, course_type_id, description, instructor_id, training_id",
     )
     .order("start_time", { ascending: when === "upcoming" });
+
+  if (limit !== undefined) {
+    slotsQuery = slotsQuery.limit(limit);
+  }
 
   const [
     { data: slots, error: slotsError },

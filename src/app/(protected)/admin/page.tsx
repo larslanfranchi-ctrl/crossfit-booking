@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   getCourseTypes,
   getInstructors,
@@ -24,14 +25,12 @@ export default async function AdminPage({
   searchParams: Promise<{ error?: string; message?: string; edit?: string }>;
 }) {
   const params = await searchParams;
-  const [slots, pastSlots, courseTypes, instructors, trainings] =
-    await Promise.all([
-      getSlotsWithParticipants("upcoming"),
-      getSlotsWithParticipants("past"),
-      getCourseTypes(),
-      getInstructors(),
-      getTrainings(),
-    ]);
+  const [slots, courseTypes, instructors, trainings] = await Promise.all([
+    getSlotsWithParticipants("upcoming"),
+    getCourseTypes(),
+    getInstructors(),
+    getTrainings(),
+  ]);
 
   const activeCourseTypes = courseTypes.filter((c) => c.is_active);
   const activeTrainings = trainings.filter((t) => t.is_active);
@@ -513,60 +512,99 @@ export default async function AdminPage({
         </div>
       </form>
 
-      <form action={deleteSlots}>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Vergangene Termine</h2>
-          {pastSlots.length > 0 && (
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-1.5 text-sm text-stone-600">
-                <SelectAllCheckbox targetName="slotIds" />
-                Alle markieren
-              </label>
-              <ConfirmSubmitButton
-                confirmMessage="Ausgewählte Termine wirklich löschen? Bestehende Buchungen gehen dabei verloren."
-                className="rounded bg-error-50 px-3 py-1.5 text-sm text-error-700 hover:bg-error-100"
-              >
-                Ausgewählte löschen
-              </ConfirmSubmitButton>
+      <Suspense
+        fallback={
+          <div>
+            <h2 className="mb-4 text-lg font-semibold">Vergangene Termine</h2>
+            <div className="animate-pulse space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-16 rounded border border-stone-200 bg-stone-100"
+                />
+              ))}
             </div>
-          )}
-        </div>
-        <p className="mb-3 text-xs text-stone-500">
-          Vergangene Termine blockieren weiterhin das Löschen ihrer Kursart
-          unter Stammdaten, solange sie hier nicht entfernt werden.
-        </p>
-        {pastSlots.length === 0 && (
-          <p className="text-sm text-stone-400">Keine vergangenen Termine.</p>
-        )}
-        <div className="space-y-3">
-          {pastSlots.map((slot) => (
-            <div
-              key={slot.id}
-              className="flex items-start gap-3 rounded border border-stone-200 p-3"
+          </div>
+        }
+      >
+        <PastSlotsSection />
+      </Suspense>
+    </div>
+  );
+}
+
+// Anzahl der angezeigten vergangenen Termine. Begrenzt, damit die Admin-Seite
+// nicht mit der gesamten Termin-Historie (inkl. Buchungen und Profilen)
+// mitwächst; die Sektion streamt zudem hinter Suspense, damit der Rest der
+// Seite nicht auf diese Query warten muss.
+const PAST_SLOTS_LIMIT = 30;
+
+async function PastSlotsSection() {
+  // Ein Eintrag mehr als angezeigt wird, um zu erkennen, ob ältere existieren.
+  const fetched = await getSlotsWithParticipants("past", PAST_SLOTS_LIMIT + 1);
+  const hasMore = fetched.length > PAST_SLOTS_LIMIT;
+  const pastSlots = fetched.slice(0, PAST_SLOTS_LIMIT);
+
+  return (
+    <form action={deleteSlots}>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Vergangene Termine</h2>
+        {pastSlots.length > 0 && (
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-1.5 text-sm text-stone-600">
+              <SelectAllCheckbox targetName="slotIds" />
+              Alle markieren
+            </label>
+            <ConfirmSubmitButton
+              confirmMessage="Ausgewählte Termine wirklich löschen? Bestehende Buchungen gehen dabei verloren."
+              className="rounded bg-error-50 px-3 py-1.5 text-sm text-error-700 hover:bg-error-100"
             >
-              <input
-                type="checkbox"
-                name="slotIds"
-                value={slot.id}
-                className="mt-1"
-                aria-label="Termin auswählen"
-              />
-              <div>
-                <div className="text-sm font-medium">
-                  {formatDate(new Date(slot.start_time))} ·{" "}
-                  {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
-                </div>
-                <div className="text-xs text-stone-500">
-                  {slot.courseTypeName ?? "Unbekannte Kursart"}
-                  {slot.instructorName && <> · {slot.instructorName}</>}
-                  {slot.trainingName && <> · {slot.trainingName}</>} ·{" "}
-                  {slot.participants.length}/{slot.capacity} belegt
-                </div>
+              Ausgewählte löschen
+            </ConfirmSubmitButton>
+          </div>
+        )}
+      </div>
+      <p className="mb-3 text-xs text-stone-500">
+        Vergangene Termine blockieren weiterhin das Löschen ihrer Kursart
+        unter Stammdaten, solange sie hier nicht entfernt werden.
+      </p>
+      {pastSlots.length === 0 && (
+        <p className="text-sm text-stone-400">Keine vergangenen Termine.</p>
+      )}
+      <div className="space-y-3">
+        {pastSlots.map((slot) => (
+          <div
+            key={slot.id}
+            className="flex items-start gap-3 rounded border border-stone-200 p-3"
+          >
+            <input
+              type="checkbox"
+              name="slotIds"
+              value={slot.id}
+              className="mt-1"
+              aria-label="Termin auswählen"
+            />
+            <div>
+              <div className="text-sm font-medium">
+                {formatDate(new Date(slot.start_time))} ·{" "}
+                {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
+              </div>
+              <div className="text-xs text-stone-500">
+                {slot.courseTypeName ?? "Unbekannte Kursart"}
+                {slot.instructorName && <> · {slot.instructorName}</>}
+                {slot.trainingName && <> · {slot.trainingName}</>} ·{" "}
+                {slot.participants.length}/{slot.capacity} belegt
               </div>
             </div>
-          ))}
-        </div>
-      </form>
-    </div>
+          </div>
+        ))}
+      </div>
+      {hasMore && (
+        <p className="mt-3 text-xs text-stone-500">
+          Es werden nur die letzten {PAST_SLOTS_LIMIT} vergangenen Termine
+          angezeigt.
+        </p>
+      )}
+    </form>
   );
 }

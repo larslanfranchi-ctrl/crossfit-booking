@@ -28,9 +28,12 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() statt getUser(): validiert das JWT lokal gegen den gecachten
+  // JWKS (bei asymmetrischen Signing-Keys) statt bei jedem Request einen
+  // Netzwerk-Roundtrip zum Auth-Server zu machen. Ein abgelaufenes Token wird
+  // dabei weiterhin über den Cookie-Refresh erneuert.
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = error ? null : (data?.claims ?? null);
 
   const pathname = request.nextUrl.pathname;
 
@@ -43,26 +46,35 @@ export async function updateSession(request: NextRequest) {
 
   const isPublicPath = PUBLIC_PATHS.includes(pathname);
 
-  if (!user && !isPublicPath) {
+  if (!claims && !isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && isPublicPath) {
+  if (claims && isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/home";
     return NextResponse.redirect(url);
   }
 
-  if (user && pathname.startsWith("/admin")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+  if (claims && pathname.startsWith("/admin")) {
+    // Rolle bevorzugt aus dem JWT-Claim "user_role" (Custom Access Token
+    // Hook); Fallback auf die profiles-Query, solange der Hook im
+    // Supabase-Dashboard nicht aktiviert ist.
+    let role: string | null =
+      typeof claims.user_role === "string" ? claims.user_role : null;
 
-    if (profile?.role !== "admin") {
+    if (role === null) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", claims.sub)
+        .single();
+      role = profile?.role ?? null;
+    }
+
+    if (role !== "admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/home";
       return NextResponse.redirect(url);

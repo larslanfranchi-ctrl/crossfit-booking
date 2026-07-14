@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { CalendarCog, Dumbbell, LogOut, Tags, Users } from "lucide-react";
-import { createClient, getUser } from "@/lib/supabase/server";
+import { getUserRole } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { BottomNav } from "@/components/bottom-nav";
 
@@ -10,18 +10,7 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const user = await getUser();
-
-  let isAdmin = false;
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    isAdmin = profile?.role === "admin";
-  }
+  const isAdmin = (await getUserRole()) === "admin";
 
   return (
     <div className="flex min-h-screen flex-col">
