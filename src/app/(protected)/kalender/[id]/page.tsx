@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSlotById } from "@/lib/data/slots";
 import { bookSlot, cancelBooking } from "@/lib/actions/bookings";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { CapacityRing, type CapacityTone } from "@/components/capacity-ring";
 import { RichTextContent } from "@/components/rich-text-content";
 import { formatDate, formatTime, toDateKey } from "@/lib/date-utils";
@@ -87,12 +88,12 @@ export default async function SlotDetailPage({
                 value={toDateKey(new Date(slot.start_time))}
               />
               <input type="hidden" name="returnTo" value={`detail:${slot.id}`} />
-              <button
-                type="submit"
+              <ConfirmSubmitButton
+                confirmMessage="Buchung wirklich stornieren?"
                 className={`rounded px-4 py-2 text-sm ${ACTION_BUTTON_STYLE}`}
               >
                 Absagen
-              </button>
+              </ConfirmSubmitButton>
             </form>
           ) : isPast ? (
             <span className="text-sm opacity-90">Dieser Termin liegt in der Vergangenheit.</span>

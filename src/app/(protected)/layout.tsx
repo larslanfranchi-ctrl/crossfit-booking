@@ -26,7 +26,7 @@ export default async function ProtectedLayout({
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-stone-200 px-6 py-4">
         <nav className="mx-auto flex max-w-5xl items-center justify-between">
-          <span className="font-semibold">Surf Booking</span>
+          <span className="font-semibold">Crossfit Booking</span>
           <div className="flex items-center gap-4">
             {isAdmin && (
               <>

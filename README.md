@@ -1,6 +1,6 @@
-# Surf Booking
+# Crossfit Booking
 
-Yoga-Studio-Buchungs-App: Nutzer melden sich an und buchen freie Kurstermine
+CrossFit-Box-Buchungs-App: Nutzer melden sich an und buchen freie Kurstermine
 über eine Wochenkalender-Ansicht, Admins verwalten Kurse, Kursarten/Level und
 Nutzerrollen. Fachliche Anforderungen: [`docs/fachkonzept.md`](docs/fachkonzept.md).
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getMyUpcomingBookings } from "@/lib/data/slots";
 import { cancelBooking } from "@/lib/actions/bookings";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { formatDate, formatTime, toDateKey } from "@/lib/date-utils";
 
 export default async function HomePage({
@@ -65,12 +66,12 @@ export default async function HomePage({
                 value={toDateKey(new Date(booking.start_time))}
               />
               <input type="hidden" name="returnTo" value="home" />
-              <button
-                type="submit"
+              <ConfirmSubmitButton
+                confirmMessage="Buchung wirklich stornieren?"
                 className="shrink-0 rounded bg-white/25 px-3 py-1.5 text-sm hover:bg-white/40"
               >
                 Absagen
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </div>
         ))}

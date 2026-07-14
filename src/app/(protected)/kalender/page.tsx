@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { X } from "lucide-react";
 import { getSlotsInRange, type SlotWithAvailability } from "@/lib/data/slots";
 import { bookSlot, cancelBooking } from "@/lib/actions/bookings";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { courseColor } from "@/lib/course-colors";
 import {
   addDays,
@@ -281,13 +283,13 @@ export default async function KalenderPage({
                 <form action={cancelBooking}>
                   <input type="hidden" name="slotId" value={slot.id} />
                   <input type="hidden" name="day" value={selectedDayKey} />
-                  <button
-                    type="submit"
+                  <ConfirmSubmitButton
+                    confirmMessage="Buchung wirklich stornieren?"
                     aria-label="Absagen"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-600 text-lg text-white hover:bg-primary-700"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white hover:bg-primary-700"
                   >
-                    ✓
-                  </button>
+                    <X size={18} strokeWidth={2.5} />
+                  </ConfirmSubmitButton>
                 </form>
               ) : tone === "available" ? (
                 <form action={bookSlot}>

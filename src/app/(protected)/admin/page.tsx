@@ -16,6 +16,7 @@ import { formatDate, formatTime, toDateKey } from "@/lib/date-utils";
 import { SelectAllCheckbox } from "@/components/select-all-checkbox";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { CreateSlotTabs } from "@/components/create-slot-tabs";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 
 export default async function AdminPage({
   searchParams,
@@ -453,12 +454,12 @@ export default async function AdminPage({
                 <SelectAllCheckbox targetName="slotIds" />
                 Alle markieren
               </label>
-              <button
-                type="submit"
+              <ConfirmSubmitButton
+                confirmMessage="Ausgewählte Termine wirklich löschen? Bestehende Buchungen gehen dabei verloren."
                 className="rounded bg-error-50 px-3 py-1.5 text-sm text-error-700 hover:bg-error-100"
               >
                 Ausgewählte löschen
-              </button>
+              </ConfirmSubmitButton>
             </div>
           )}
         </div>
@@ -521,12 +522,12 @@ export default async function AdminPage({
                 <SelectAllCheckbox targetName="slotIds" />
                 Alle markieren
               </label>
-              <button
-                type="submit"
+              <ConfirmSubmitButton
+                confirmMessage="Ausgewählte Termine wirklich löschen? Bestehende Buchungen gehen dabei verloren."
                 className="rounded bg-error-50 px-3 py-1.5 text-sm text-error-700 hover:bg-error-100"
               >
                 Ausgewählte löschen
-              </button>
+              </ConfirmSubmitButton>
             </div>
           )}
         </div>

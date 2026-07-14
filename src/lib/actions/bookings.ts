@@ -7,6 +7,18 @@ import { parseDateKey, startOfWeek, toDateKey } from "@/lib/date-utils";
 
 type Feedback = { error?: string; message?: string };
 
+// Übersetzt technische Fehler beim Buchen in verständliche Meldungen, statt
+// rohe Postgres-/PostgREST-Meldungen an Nutzer:innen durchzureichen.
+function bookingErrorMessage(error: { code?: string; message?: string }): string {
+  if (error.code === "23505") {
+    return "Du bist für diesen Termin bereits angemeldet.";
+  }
+  if (error.message?.includes("ausgebucht")) {
+    return "Dieser Termin ist leider schon ausgebucht.";
+  }
+  return "Die Buchung konnte nicht gespeichert werden. Bitte versuche es erneut.";
+}
+
 function buildKalenderUrl(day: string, feedback?: Feedback) {
   const params = new URLSearchParams();
   if (day) {
@@ -78,7 +90,7 @@ export async function bookSlot(formData: FormData) {
     .insert({ slot_id: slotId, user_id: user.id });
 
   if (error) {
-    redirect(buildReturnUrl(returnTo, day, { error: error.message }));
+    redirect(buildReturnUrl(returnTo, day, { error: bookingErrorMessage(error) }));
   }
 
   revalidatePath("/kalender");
@@ -106,7 +118,12 @@ export async function cancelBooking(formData: FormData) {
     .eq("user_id", user.id);
 
   if (error) {
-    redirect(buildReturnUrl(returnTo, day, { error: error.message }));
+    redirect(
+      buildReturnUrl(returnTo, day, {
+        error:
+          "Die Stornierung konnte nicht durchgeführt werden. Bitte versuche es erneut.",
+      }),
+    );
   }
 
   revalidatePath("/kalender");
