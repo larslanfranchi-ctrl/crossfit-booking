@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient, getUser } from "@/lib/supabase/server";
+import { createClient, getUser, getUserRole } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { addDays, parseDateKey } from "@/lib/date-utils";
 
 function buildAdminUrl(error?: string) {
@@ -828,6 +829,230 @@ export async function setUserActive(formData: FormData) {
       "/admin/nutzer",
       newActive ? "Konto aktiviert." : "Konto deaktiviert.",
     ),
+  );
+}
+
+// Eine CSV-Zeile in Felder zerlegen; unterstützt in Anführungszeichen
+// gesetzte Felder mit Trennzeichen und doppelten Anführungszeichen darin.
+function parseCsvLine(line: string, delimiter: string): string[] {
+  const fields: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (inQuotes) {
+      if (char === '"') {
+        if (line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += char;
+      }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === delimiter) {
+      fields.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  fields.push(current);
+  return fields.map((f) => f.trim());
+}
+
+// "31.12.2026" oder "2026-12-31" → "2026-12-31"; leer → null (unbefristet);
+// nicht erkanntes Format → undefined.
+function parseImportDate(value: string): string | null | undefined {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const match = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (match) {
+    return `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+  }
+  return undefined;
+}
+
+// Nutzer-Import für die Migration bestehender Mitglieder: legt pro
+// CSV-Zeile ein Auth-Konto ohne Passwort an (E-Mail gilt als bestätigt,
+// Passwort setzen die Nutzer selbst über "Passwort vergessen") und weist
+// optional gleich ein Abo zu. Läuft über den Service-Role-Client, weil
+// die Auth-Admin-API mit dem Anon-Key nicht erreichbar ist.
+export async function importUsers(formData: FormData) {
+  // Der Service-Role-Client umgeht RLS - die Admin-Prüfung MUSS deshalb
+  // hier im Code passieren.
+  if ((await getUserRole()) !== "admin") {
+    redirect(buildUrl("/admin/nutzer", "Nur Admins dürfen Nutzer importieren."));
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(buildUrl("/admin/nutzer", "Bitte eine CSV-Datei auswählen."));
+  }
+
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    redirect(
+      buildUrl(
+        "/admin/nutzer",
+        e instanceof Error ? e.message : "Import ist nicht konfiguriert.",
+      ),
+    );
+  }
+
+  // BOM aus Excel-Exporten entfernen, Leerzeilen ignorieren.
+  const rawText = await file.text();
+  const text =
+    rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
+  const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
+
+  if (lines.length < 2) {
+    redirect(
+      buildUrl("/admin/nutzer", "Die CSV-Datei enthält keine Datenzeilen."),
+    );
+  }
+
+  // Deutsche Excel-Exporte trennen mit Semikolon, sonst Komma.
+  const delimiter = lines[0].includes(";") ? ";" : ",";
+  const header = parseCsvLine(lines[0], delimiter).map((h) => h.toLowerCase());
+
+  const emailIdx = header.indexOf("email");
+  const firstNameIdx = header.indexOf("vorname");
+  const lastNameIdx = header.indexOf("nachname");
+  const phoneIdx = header.indexOf("telefon");
+  const aboIdx = header.indexOf("abo");
+  const aboBisIdx = header.indexOf("abo_bis");
+
+  if (emailIdx === -1) {
+    redirect(
+      buildUrl("/admin/nutzer", 'Die Spalte "email" fehlt in der CSV-Datei.'),
+    );
+  }
+
+  const { data: memberships, error: membershipsError } = await admin
+    .from("memberships")
+    .select("id, name");
+
+  if (membershipsError) {
+    redirect(buildUrl("/admin/nutzer", membershipsError.message));
+  }
+
+  const membershipByName = new Map(
+    (memberships ?? []).map((m) => [m.name.toLowerCase(), m.id]),
+  );
+
+  let created = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const fields = parseCsvLine(lines[i], delimiter);
+    const rowNo = i + 1;
+    const value = (idx: number) => (idx >= 0 ? (fields[idx] ?? "") : "");
+
+    const email = value(emailIdx).toLowerCase();
+    if (!email.includes("@")) {
+      errors.push(`Zeile ${rowNo}: ungültige E-Mail "${email}"`);
+      continue;
+    }
+
+    // Abo und Datum VOR dem Anlegen validieren, damit fehlerhafte Zeilen
+    // korrigiert und erneut importiert werden können, ohne dass halbe
+    // Nutzer (Konto ohne Abo) zurückbleiben.
+    const aboName = value(aboIdx);
+    const membershipId = aboName
+      ? membershipByName.get(aboName.toLowerCase())
+      : undefined;
+    if (aboName && membershipId === undefined) {
+      errors.push(`Zeile ${rowNo}: Abo "${aboName}" nicht gefunden`);
+      continue;
+    }
+
+    const endsOn = parseImportDate(value(aboBisIdx));
+    if (endsOn === undefined) {
+      errors.push(
+        `Zeile ${rowNo}: ungültiges Datum in abo_bis (erwartet TT.MM.JJJJ oder JJJJ-MM-TT)`,
+      );
+      continue;
+    }
+
+    const { data: createdUser, error: createError } =
+      await admin.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: {
+          first_name: value(firstNameIdx) || null,
+          last_name: value(lastNameIdx) || null,
+        },
+      });
+
+    if (createError) {
+      if (createError.code === "email_exists") {
+        skipped++;
+      } else {
+        errors.push(`Zeile ${rowNo}: ${createError.message}`);
+      }
+      continue;
+    }
+
+    const userId = createdUser.user.id;
+
+    // Das Profil hat der Signup-Trigger (026) bereits angelegt - nur noch
+    // die Felder nachtragen, die er nicht kennt.
+    const phone = value(phoneIdx);
+    if (phone) {
+      const { error: phoneError } = await admin
+        .from("profiles")
+        .update({ phone })
+        .eq("id", userId);
+      if (phoneError) {
+        errors.push(
+          `Zeile ${rowNo}: Telefon konnte nicht gespeichert werden (${phoneError.message})`,
+        );
+      }
+    }
+
+    if (membershipId !== undefined) {
+      const { error: aboError } = await admin.from("user_memberships").insert({
+        user_id: userId,
+        membership_id: membershipId,
+        ends_on: endsOn,
+      });
+      if (aboError) {
+        errors.push(
+          `Zeile ${rowNo}: Abo konnte nicht zugewiesen werden (${aboError.message})`,
+        );
+      }
+    }
+
+    created++;
+  }
+
+  const parts = [`${created} Nutzer angelegt`];
+  if (skipped > 0) {
+    parts.push(`${skipped} übersprungen (E-Mail existiert bereits)`);
+  }
+  let message = `Import abgeschlossen: ${parts.join(", ")}.`;
+
+  if (errors.length > 0) {
+    const shown = errors.slice(0, 5);
+    message += ` ${errors.length} Fehler: ${shown.join(" | ")}${
+      errors.length > shown.length ? " | …" : ""
+    }`;
+  }
+
+  revalidatePath("/admin/nutzer");
+  redirect(
+    errors.length > 0
+      ? buildUrl("/admin/nutzer", message)
+      : successUrl("/admin/nutzer", message),
   );
 }
 

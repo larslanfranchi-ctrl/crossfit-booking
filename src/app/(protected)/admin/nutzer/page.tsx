@@ -3,6 +3,7 @@ import { getAllUsers, getUserMembershipAssignments } from "@/lib/data/admin";
 import { getMemberships } from "@/lib/data/memberships";
 import {
   assignMembership,
+  importUsers,
   removeUserMembership,
   setUserActive,
   setUserRole,
@@ -59,6 +60,42 @@ export default async function NutzerPage({
           {params.error}
         </p>
       )}
+
+      <details className="max-w-2xl rounded border border-stone-200">
+        <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
+          Nutzer aus CSV importieren
+        </summary>
+        <div className="space-y-3 border-t border-stone-100 px-3 py-3">
+          <p className="text-xs text-stone-500">
+            Erwartete Spalten: <code>email</code> (Pflicht),{" "}
+            <code>vorname</code>, <code>nachname</code>, <code>telefon</code>,{" "}
+            <code>abo</code> (Name des Abos, muss in der Abo-Verwaltung
+            existieren), <code>abo_bis</code> (TT.MM.JJJJ, leer = unbefristet).
+            Trennzeichen Komma oder Semikolon. Bereits registrierte
+            E-Mail-Adressen werden übersprungen. Importierte Nutzer setzen ihr
+            Passwort selbst über &bdquo;Passwort vergessen&ldquo; auf der
+            Login-Seite.
+          </p>
+          <form
+            action={importUsers}
+            className="flex flex-wrap items-center gap-2"
+          >
+            <input
+              type="file"
+              name="file"
+              accept=".csv,text/csv"
+              required
+              className="text-sm"
+            />
+            <button
+              type="submit"
+              className="rounded bg-stone-50 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-100"
+            >
+              Importieren
+            </button>
+          </form>
+        </div>
+      </details>
 
       <div className="max-w-2xl space-y-2">
         {users.map((u) => {
