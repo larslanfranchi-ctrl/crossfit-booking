@@ -1,17 +1,7 @@
-import Link from "next/link";
 import Image from "next/image";
-import {
-  CalendarCog,
-  CreditCard,
-  Dumbbell,
-  LogOut,
-  Tags,
-  Ticket,
-  Users,
-} from "lucide-react";
 import { getUserRole } from "@/lib/supabase/server";
-import { signOut } from "@/lib/actions/auth";
 import { BottomNav } from "@/components/bottom-nav";
+import { HeaderMenu } from "@/components/header-menu";
 
 export default async function ProtectedLayout({
   children,
@@ -37,70 +27,7 @@ export default async function ProtectedLayout({
               Lionsoul Performance
             </span>
           </span>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/abos"
-              title="Abos"
-              aria-label="Abos"
-              className="text-stone-500 hover:text-stone-900"
-            >
-              <Ticket size={20} />
-            </Link>
-            {isAdmin && (
-              <>
-                <Link
-                  href="/admin"
-                  title="Terminverwaltung"
-                  aria-label="Terminverwaltung"
-                  className="text-stone-500 hover:text-stone-900"
-                >
-                  <CalendarCog size={20} />
-                </Link>
-                <Link
-                  href="/admin/stammdaten"
-                  title="Kursangebote"
-                  aria-label="Kursangebote"
-                  className="text-stone-500 hover:text-stone-900"
-                >
-                  <Tags size={20} />
-                </Link>
-                <Link
-                  href="/admin/trainings"
-                  title="Trainings"
-                  aria-label="Trainings"
-                  className="text-stone-500 hover:text-stone-900"
-                >
-                  <Dumbbell size={20} />
-                </Link>
-                <Link
-                  href="/admin/abos"
-                  title="Abo-Verwaltung"
-                  aria-label="Abo-Verwaltung"
-                  className="text-stone-500 hover:text-stone-900"
-                >
-                  <CreditCard size={20} />
-                </Link>
-                <Link
-                  href="/admin/nutzer"
-                  title="Nutzer"
-                  aria-label="Nutzer"
-                  className="text-stone-500 hover:text-stone-900"
-                >
-                  <Users size={20} />
-                </Link>
-              </>
-            )}
-            <form action={signOut}>
-              <button
-                type="submit"
-                title="Abmelden"
-                aria-label="Abmelden"
-                className="text-stone-500 hover:text-stone-900"
-              >
-                <LogOut size={20} />
-              </button>
-            </form>
-          </div>
+          <HeaderMenu isAdmin={isAdmin} />
         </nav>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8 pb-28">
