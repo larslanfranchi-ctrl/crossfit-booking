@@ -13,8 +13,14 @@ Stories). **Bisher umgesetzt:**
 - Abo-Angebote: Mitglieder sehen unter `/abos` das aktuelle Angebot
   (Preise, Kontingente, enthaltene Kurse), Admins pflegen es unter
   `/admin/abos` — reine Anzeige, keine Buchungs-/Zahlungslogik.
+- Abo-Zuweisungen: Admins weisen Nutzern unter `/admin/nutzer` ein Abo zu
+  (optional mit Gültig-bis-Datum); Mitglieder sehen ihr Abo im Profil-Hub
+  unter `/konto` — rein informativ, Check-in-Limits werden nicht erzwungen.
+- Profil-Hub: `/konto` bündelt Abo, Buchungshistorie, Profildaten,
+  Passwortwechsel (mit Abfrage des aktuellen Passworts) und Abmelden.
 
-**Noch offen:** Warteliste, Zahlungen (Abos kaufen/zuordnen), Admin-Reporting.
+**Noch offen:** Warteliste, Zahlungen (Abos kaufen), Admin-Reporting,
+Durchsetzung von Abo-Kontingenten beim Buchen.
 
 ## Setup
 
@@ -56,9 +62,10 @@ werden.
   Serientermine), `/admin/stammdaten` (Kursarten/Level verwalten),
   `/admin/trainings` (Trainingsinhalte), `/admin/abos` (Abo-Angebot
   pflegen), `/admin/nutzer` (Admin-Rechte per Schalter vergeben/entziehen,
-  Konten deaktivieren/reaktivieren).
+  Konten deaktivieren/reaktivieren, Abos zuweisen/entfernen).
 - **Benutzer**: `/kalender` (Wochenansicht, Termine buchen/stornieren),
-  `/abos` (Abo-Angebot einsehen).
+  `/abos` (Abo-Angebot einsehen), `/konto` (Profil-Hub mit eigenem Abo,
+  Buchungshistorie, Profildaten und Passwortwechsel).
 
 Rollen werden nicht per Self-Service vergeben - ein neuer Account ist immer
 `user`. Der letzte verbleibende aktive Admin kann weder herabgestuft noch

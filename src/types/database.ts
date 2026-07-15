@@ -147,6 +147,28 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_memberships: {
+        Row: {
+          id: number;
+          user_id: string;
+          membership_id: number;
+          starts_on: string;
+          ends_on: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          membership_id: number;
+          starts_on?: string;
+          ends_on?: string | null;
+        };
+        Update: {
+          membership_id?: number;
+          starts_on?: string;
+          ends_on?: string | null;
+        };
+        Relationships: [];
+      };
       bookings: {
         Row: {
           id: number;

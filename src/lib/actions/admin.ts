@@ -681,7 +681,11 @@ export async function deleteMembership(formData: FormData) {
   const { error } = await supabase.from("memberships").delete().eq("id", id);
 
   if (error) {
-    redirect(buildUrl("/admin/abos", error.message));
+    const message =
+      error.code === "23503"
+        ? "Dieses Abo ist noch Nutzern zugewiesen und kann nicht gelöscht werden. Du kannst es stattdessen deaktivieren."
+        : error.message;
+    redirect(buildUrl("/admin/abos", message));
   }
 
   revalidatePath("/admin/abos");
@@ -739,6 +743,49 @@ export async function moveMembership(formData: FormData) {
   revalidatePath("/admin/abos");
   revalidatePath("/abos");
   redirect("/admin/abos");
+}
+
+export async function assignMembership(formData: FormData) {
+  const userId = String(formData.get("userId") ?? "");
+  const membershipIdRaw = String(formData.get("membershipId") ?? "").trim();
+  const endsOn = String(formData.get("endsOn") ?? "").trim() || null;
+  const supabase = await createClient();
+
+  if (!userId || !membershipIdRaw) {
+    redirect(buildUrl("/admin/nutzer", "Bitte ein Abo auswählen."));
+  }
+
+  const { error } = await supabase.from("user_memberships").insert({
+    user_id: userId,
+    membership_id: Number(membershipIdRaw),
+    ends_on: endsOn,
+  });
+
+  if (error) {
+    redirect(buildUrl("/admin/nutzer", error.message));
+  }
+
+  revalidatePath("/admin/nutzer");
+  revalidatePath("/konto");
+  redirect(successUrl("/admin/nutzer", "Abo zugewiesen."));
+}
+
+export async function removeUserMembership(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("user_memberships")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    redirect(buildUrl("/admin/nutzer", error.message));
+  }
+
+  revalidatePath("/admin/nutzer");
+  revalidatePath("/konto");
+  redirect(successUrl("/admin/nutzer", "Abo-Zuweisung entfernt."));
 }
 
 export async function setUserActive(formData: FormData) {

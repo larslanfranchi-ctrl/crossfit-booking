@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
+import { getMyMemberships } from "@/lib/data/memberships";
 
 // Profil-Hub: Einstiegsseite des "Profil"-Tabs mit Nutzerkopf und
 // gruppierten Navigationszeilen; die Profildaten selbst liegen unter
@@ -17,11 +18,14 @@ export default async function KontoPage() {
   const supabase = await createClient();
   const user = await getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("first_name, last_name")
-    .eq("id", user!.id)
-    .single();
+  const [{ data: profile }, myAbos] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("first_name, last_name")
+      .eq("id", user!.id)
+      .single(),
+    getMyMemberships(),
+  ]);
 
   const fullName = [profile?.first_name, profile?.last_name]
     .filter(Boolean)
@@ -48,6 +52,33 @@ export default async function KontoPage() {
         {fullName && <div className="mt-3 font-semibold">{fullName}</div>}
         <div className="mt-0.5 text-sm text-stone-500">{user?.email}</div>
       </div>
+
+      {myAbos.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-stone-400">
+            {myAbos.length === 1 ? "Mein Abo" : "Meine Abos"}
+          </h2>
+          <div className="space-y-2">
+            {myAbos.map((abo) => (
+              <div
+                key={abo.id}
+                className="rounded-xl border border-stone-200 bg-stone-100 p-4"
+              >
+                <div className="font-semibold">{abo.name}</div>
+                <div className="mt-0.5 text-xs text-stone-500">
+                  {abo.checkIns && `${abo.checkIns} · `}
+                  {abo.endsOn
+                    ? `gültig bis ${new Date(abo.endsOn).toLocaleDateString(
+                        "de-DE",
+                        { day: "2-digit", month: "2-digit", year: "numeric" },
+                      )}`
+                    : "unbefristet"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {[
         { title: "Lionsoul Performance", items: studioItems },

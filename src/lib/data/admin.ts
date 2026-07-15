@@ -104,6 +104,45 @@ export async function getAllUsers(): Promise<AdminUser[]> {
   }));
 }
 
+export type UserMembershipAssignment = {
+  id: number;
+  userId: string;
+  membershipName: string;
+  startsOn: string;
+  endsOn: string | null;
+};
+
+/** Alle Abo-Zuweisungen für die Nutzerverwaltung (nur Admins per RLS). */
+export async function getUserMembershipAssignments(): Promise<
+  UserMembershipAssignment[]
+> {
+  const supabase = await createClient();
+
+  const [
+    { data: assignments, error: assignmentsError },
+    { data: catalog, error: catalogError },
+  ] = await Promise.all([
+    supabase
+      .from("user_memberships")
+      .select("id, user_id, membership_id, starts_on, ends_on")
+      .order("starts_on", { ascending: false }),
+    supabase.from("memberships").select("id, name"),
+  ]);
+
+  if (assignmentsError) throw assignmentsError;
+  if (catalogError) throw catalogError;
+
+  const nameById = new Map((catalog ?? []).map((m) => [m.id, m.name]));
+
+  return (assignments ?? []).map((a) => ({
+    id: a.id,
+    userId: a.user_id,
+    membershipName: nameById.get(a.membership_id) ?? "Unbekanntes Abo",
+    startsOn: a.starts_on,
+    endsOn: a.ends_on,
+  }));
+}
+
 export async function getSlotsWithParticipants(
   when: "upcoming" | "past",
   // Ohne Limit wächst die Liste vergangener Termine (inkl. Buchungen und
