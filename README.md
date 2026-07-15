@@ -22,6 +22,15 @@ Stories). **Bisher umgesetzt:**
   die Limits pflegen Admins pro Abo unter `/admin/abos`.
 - Profil-Hub: `/konto` bündelt Abo, Buchungshistorie, Profildaten,
   Passwortwechsel (mit Abfrage des aktuellen Passworts) und Abmelden.
+- Nutzerverwaltung: `/admin/nutzer` zeigt eine kompakte Übersicht mit
+  Kennzahlen (gesamt, aktiv, Team, mit gültigem Abo), Volltextsuche über
+  Name/E-Mail und Filtern nach Rolle und Status. Pro Nutzer werden Rolle,
+  Abo-Zuweisung und Ablaufdatum in einem Speichern-Vorgang gesetzt;
+  bestehende Abos lassen sich einzeln entfernen.
+- Nutzer-Import: bestehende Mitglieder können unter `/admin/nutzer` per
+  CSV importiert werden (Spalten `email`, `vorname`, `nachname`, `telefon`,
+  optional `abo` und `abo_bis`). Konten werden ohne Passwort angelegt; die
+  Nutzer setzen es selbst über „Passwort vergessen".
 
 **Noch offen:** Warteliste, Zahlungen (Abos kaufen), Admin-Reporting,
 Kurs-Einschränkungen pro Abo (Feld „Enthaltene Kurse" ist reine Anzeige).
@@ -65,8 +74,8 @@ werden.
 - **Admin**: `/admin` (Termine anlegen/bearbeiten/löschen, Einzel- und
   Serientermine), `/admin/stammdaten` (Kursarten/Level verwalten),
   `/admin/trainings` (Trainingsinhalte), `/admin/abos` (Abo-Angebot
-  pflegen), `/admin/nutzer` (Admin-Rechte per Schalter vergeben/entziehen,
-  Konten deaktivieren/reaktivieren, Abos zuweisen/entfernen).
+  pflegen), `/admin/nutzer` (Übersicht mit Suche/Filter: Rollen vergeben,
+  Konten deaktivieren/reaktivieren, Abos zuweisen/entfernen, CSV-Import).
 - **Benutzer**: `/kalender` (Wochenansicht, Termine buchen/stornieren),
   `/abos` (Abo-Angebot einsehen), `/konto` (Profil-Hub mit eigenem Abo,
   Buchungshistorie, Profildaten und Passwortwechsel).
