@@ -572,6 +572,14 @@ function parseMembershipForm(formData: FormData) {
   const price = String(formData.get("price") ?? "").trim();
   const priceNoteRaw = String(formData.get("priceNote") ?? "").trim();
   const priceNote = priceNoteRaw === "pro Monat" ? "pro Monat" : "einmalig";
+  const checkinLimitRaw = String(formData.get("checkinLimit") ?? "").trim();
+  const checkinLimit = checkinLimitRaw ? Number(checkinLimitRaw) : null;
+  const checkinPeriodRaw = String(formData.get("checkinPeriod") ?? "");
+  const checkinPeriod = checkinPeriodRaw === "week" ? "week" : "total";
+
+  const limitValid =
+    checkinLimit === null ||
+    (Number.isInteger(checkinLimit) && checkinLimit >= 1);
 
   return {
     name,
@@ -580,7 +588,9 @@ function parseMembershipForm(formData: FormData) {
     classes,
     price,
     price_note: priceNote,
-    isValid: Boolean(name && duration && checkIns && price),
+    checkin_limit: checkinLimit,
+    checkin_period: checkinPeriod as "total" | "week",
+    isValid: Boolean(name && duration && checkIns && price) && limitValid,
   };
 }
 

@@ -15,12 +15,16 @@ Stories). **Bisher umgesetzt:**
   `/admin/abos` — reine Anzeige, keine Buchungs-/Zahlungslogik.
 - Abo-Zuweisungen: Admins weisen Nutzern unter `/admin/nutzer` ein Abo zu
   (optional mit Gültig-bis-Datum); Mitglieder sehen ihr Abo im Profil-Hub
-  unter `/konto` — rein informativ, Check-in-Limits werden nicht erzwungen.
+  unter `/konto`.
+- Check-in-Limits: Buchen erfordert ein aktives Abo mit freiem Kontingent
+  (pro Laufzeit oder pro Woche, per DB-Trigger erzwungen; Admins und
+  Kursleiter:innen sind ausgenommen). Das Restguthaben steht auf `/home`,
+  die Limits pflegen Admins pro Abo unter `/admin/abos`.
 - Profil-Hub: `/konto` bündelt Abo, Buchungshistorie, Profildaten,
   Passwortwechsel (mit Abfrage des aktuellen Passworts) und Abmelden.
 
 **Noch offen:** Warteliste, Zahlungen (Abos kaufen), Admin-Reporting,
-Durchsetzung von Abo-Kontingenten beim Buchen.
+Kurs-Einschränkungen pro Abo (Feld „Enthaltene Kurse" ist reine Anzeige).
 
 ## Setup
 

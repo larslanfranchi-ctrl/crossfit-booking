@@ -82,6 +82,46 @@ function MembershipFields({
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label
+            htmlFor={`${idPrefix}-checkinLimit`}
+            className="block text-sm font-medium"
+          >
+            Check-in-Limit (leer = unbegrenzt)
+          </label>
+          <input
+            id={`${idPrefix}-checkinLimit`}
+            name="checkinLimit"
+            type="number"
+            min={1}
+            defaultValue={membership?.checkin_limit ?? ""}
+            placeholder="z.B. 10"
+            className="mt-1 w-full rounded border border-stone-300 px-3 py-2"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={`${idPrefix}-checkinPeriod`}
+            className="block text-sm font-medium"
+          >
+            Limit gilt
+          </label>
+          <select
+            id={`${idPrefix}-checkinPeriod`}
+            name="checkinPeriod"
+            defaultValue={membership?.checkin_period ?? "total"}
+            className="mt-1 w-full rounded border border-stone-300 px-3 py-2"
+          >
+            <option value="total">für die gesamte Laufzeit</option>
+            <option value="week">pro Woche</option>
+          </select>
+        </div>
+      </div>
+      <p className="text-xs text-stone-500">
+        Das Limit wird beim Buchen durchgesetzt; das Feld „Check-ins&quot; oben
+        ist nur der Anzeigetext.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label
             htmlFor={`${idPrefix}-price`}
             className="block text-sm font-medium"
           >

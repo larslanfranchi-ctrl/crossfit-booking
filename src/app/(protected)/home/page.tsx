@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getMyUpcomingBookings } from "@/lib/data/slots";
+import { getMyCheckinBalance } from "@/lib/data/memberships";
 import { cancelBooking } from "@/lib/actions/bookings";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { addDays, formatTime, startOfWeek, toDateKey } from "@/lib/date-utils";
@@ -16,7 +17,10 @@ export default async function HomePage({
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const params = await searchParams;
-  const bookings = await getMyUpcomingBookings();
+  const [bookings, balance] = await Promise.all([
+    getMyUpcomingBookings(),
+    getMyCheckinBalance(),
+  ]);
 
   const weekStart = startOfWeek(new Date());
   const weekEnd = addDays(weekStart, 7);
@@ -53,11 +57,21 @@ export default async function HomePage({
           </div>
         </div>
         <div className="rounded-xl border border-stone-200 bg-stone-100 p-4">
-          <div className="text-2xl font-extrabold tabular-nums text-stone-500">
-            –
+          <div
+            className={`text-2xl font-extrabold tabular-nums ${
+              balance.kind === "none" ? "text-stone-500" : "text-primary-600"
+            }`}
+          >
+            {balance.kind === "unlimited" && "∞"}
+            {balance.kind === "limited" && balance.remaining}
+            {balance.kind === "none" && "–"}
           </div>
           <div className="mt-1 text-[11px] font-bold uppercase tracking-wider text-stone-400">
-            Guthaben
+            {balance.kind === "none"
+              ? "Guthaben"
+              : balance.kind === "limited" && balance.period === "week"
+                ? "Check-ins diese Woche"
+                : "Check-ins übrig"}
           </div>
         </div>
       </div>

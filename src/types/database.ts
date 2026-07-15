@@ -1,5 +1,7 @@
 export type UserRole = "admin" | "instructor" | "user";
 
+export type CheckinPeriod = "total" | "week";
+
 export type Database = {
   public: {
     Tables: {
@@ -124,6 +126,8 @@ export type Database = {
           price_note: string;
           is_active: boolean;
           sort_order: number;
+          checkin_limit: number | null;
+          checkin_period: CheckinPeriod;
         };
         Insert: {
           name: string;
@@ -134,6 +138,8 @@ export type Database = {
           price_note?: string;
           is_active?: boolean;
           sort_order?: number;
+          checkin_limit?: number | null;
+          checkin_period?: CheckinPeriod;
         };
         Update: {
           name?: string;
@@ -144,6 +150,8 @@ export type Database = {
           price_note?: string;
           is_active?: boolean;
           sort_order?: number;
+          checkin_limit?: number | null;
+          checkin_period?: CheckinPeriod;
         };
         Relationships: [];
       };

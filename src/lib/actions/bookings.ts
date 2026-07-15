@@ -16,6 +16,14 @@ function bookingErrorMessage(error: { code?: string; message?: string }): string
   if (error.message?.includes("ausgebucht")) {
     return "Dieser Termin ist leider schon ausgebucht.";
   }
+  if (error.message?.includes("Kein aktives Abo")) {
+    return "Du hast kein aktives Abo für diesen Termin. Bitte wende dich ans Lionsoul-Team.";
+  }
+  // Kontingent-Meldungen des Triggers (039) sind bereits nutzerfreundlich
+  // formuliert und werden unverändert angezeigt.
+  if (error.message?.includes("Kontingent")) {
+    return error.message;
+  }
   return "Die Buchung konnte nicht gespeichert werden. Bitte versuche es erneut.";
 }
 
