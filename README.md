@@ -55,10 +55,18 @@ werden.
 - **Admin**: `/admin` (Termine anlegen/bearbeiten/löschen, Einzel- und
   Serientermine), `/admin/stammdaten` (Kursarten/Level verwalten),
   `/admin/trainings` (Trainingsinhalte), `/admin/abos` (Abo-Angebot
-  pflegen), `/admin/nutzer` (Admin-Rechte per Schalter vergeben/entziehen).
+  pflegen), `/admin/nutzer` (Admin-Rechte per Schalter vergeben/entziehen,
+  Konten deaktivieren/reaktivieren).
 - **Benutzer**: `/kalender` (Wochenansicht, Termine buchen/stornieren),
   `/abos` (Abo-Angebot einsehen).
 
 Rollen werden nicht per Self-Service vergeben - ein neuer Account ist immer
-`user`. Der letzte verbleibende Admin kann nicht herabgestuft werden
-(serverseitig per DB-Trigger erzwungen, nicht nur in der UI).
+`user`. Der letzte verbleibende aktive Admin kann weder herabgestuft noch
+deaktiviert werden (serverseitig per DB-Trigger erzwungen, nicht nur in der
+UI).
+
+Deaktivierte Konten (z.B. bei ausgelaufenem Abo) bleiben inkl.
+Buchungshistorie erhalten: der Nutzer sieht nach dem Login nur noch eine
+Hinweisseite (`/konto-deaktiviert`), neue Buchungen sind sofort per RLS
+gesperrt. Die UI-Sperre greift über den JWT-Claim `user_is_active` spätestens
+nach dem nächsten Token-Refresh (max. 1 Stunde).

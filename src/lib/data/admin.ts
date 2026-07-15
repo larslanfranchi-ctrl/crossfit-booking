@@ -43,6 +43,7 @@ export type AdminUser = {
   fullName: string | null;
   email: string;
   role: UserRole;
+  isActive: boolean;
 };
 
 export async function getCourseTypes(): Promise<MasterDataItem[]> {
@@ -99,6 +100,7 @@ export async function getAllUsers(): Promise<AdminUser[]> {
     fullName: u.full_name,
     email: u.email,
     role: u.role,
+    isActive: u.is_active,
   }));
 }
 

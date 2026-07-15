@@ -1,6 +1,6 @@
 import { getUser } from "@/lib/supabase/server";
 import { getAllUsers } from "@/lib/data/admin";
-import { setUserRole } from "@/lib/actions/admin";
+import { setUserActive, setUserRole } from "@/lib/actions/admin";
 
 const ROLE_LABELS = {
   admin: "Admin",
@@ -46,37 +46,64 @@ export default async function NutzerPage({
             className="flex items-center justify-between rounded border border-stone-200 px-3 py-2"
           >
             <div>
-              <div className="text-sm font-medium">
+              <div
+                className={`text-sm font-medium ${u.isActive ? "" : "text-stone-400 line-through"}`}
+              >
                 {u.fullName ?? "Unbenannter Nutzer"}
                 {u.id === currentUser?.id && (
-                  <span className="ml-2 text-xs text-stone-400">(Du)</span>
+                  <span className="ml-2 text-xs text-stone-400 no-underline">
+                    (Du)
+                  </span>
                 )}
               </div>
               <div className="text-xs text-stone-500">{u.email}</div>
             </div>
-            <form action={setUserRole} className="flex items-center gap-2">
-              <input type="hidden" name="userId" value={u.id} />
-              <span
-                className={`rounded px-2 py-1 text-xs ${ROLE_BADGE_STYLES[u.role]}`}
-              >
-                {ROLE_LABELS[u.role]}
-              </span>
-              <select
-                name="newRole"
-                defaultValue={u.role}
-                className="rounded border border-stone-300 px-2 py-1.5 text-sm"
-              >
-                <option value="user">Nutzer</option>
-                <option value="instructor">Kursleiter:in</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button
-                type="submit"
-                className="rounded bg-stone-50 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-100"
-              >
-                Speichern
-              </button>
-            </form>
+            <div className="flex items-center gap-2">
+              {!u.isActive && (
+                <span className="rounded bg-error-50 px-2 py-1 text-xs text-error-700">
+                  Deaktiviert
+                </span>
+              )}
+              <form action={setUserRole} className="flex items-center gap-2">
+                <input type="hidden" name="userId" value={u.id} />
+                <span
+                  className={`rounded px-2 py-1 text-xs ${ROLE_BADGE_STYLES[u.role]}`}
+                >
+                  {ROLE_LABELS[u.role]}
+                </span>
+                <select
+                  name="newRole"
+                  defaultValue={u.role}
+                  className="rounded border border-stone-300 px-2 py-1.5 text-sm"
+                >
+                  <option value="user">Nutzer</option>
+                  <option value="instructor">Kursleiter:in</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <button
+                  type="submit"
+                  className="rounded bg-stone-50 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-100"
+                >
+                  Speichern
+                </button>
+              </form>
+              {u.id !== currentUser?.id && (
+                <form action={setUserActive}>
+                  <input type="hidden" name="userId" value={u.id} />
+                  <input
+                    type="hidden"
+                    name="newActive"
+                    value={u.isActive ? "false" : "true"}
+                  />
+                  <button
+                    type="submit"
+                    className="rounded bg-stone-50 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-100"
+                  >
+                    {u.isActive ? "Deaktivieren" : "Aktivieren"}
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         ))}
         {users.length === 0 && (

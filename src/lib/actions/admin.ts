@@ -741,6 +741,39 @@ export async function moveMembership(formData: FormData) {
   redirect("/admin/abos");
 }
 
+export async function setUserActive(formData: FormData) {
+  const userId = String(formData.get("userId") ?? "");
+  const newActive = formData.get("newActive") === "true";
+  const supabase = await createClient();
+  const user = await getUser();
+
+  // Selbst-Deaktivierung sperren: man würde sich sofort aussperren, obwohl
+  // noch andere Admins existieren (der letzte Admin ist per DB-Trigger
+  // geschützt, dieser Fall hier nicht).
+  if (!newActive && user?.id === userId) {
+    redirect(
+      buildUrl("/admin/nutzer", "Du kannst dein eigenes Konto nicht deaktivieren."),
+    );
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_active: newActive })
+    .eq("id", userId);
+
+  if (error) {
+    redirect(buildUrl("/admin/nutzer", error.message));
+  }
+
+  revalidatePath("/admin/nutzer");
+  redirect(
+    successUrl(
+      "/admin/nutzer",
+      newActive ? "Konto aktiviert." : "Konto deaktiviert.",
+    ),
+  );
+}
+
 export async function setUserRole(formData: FormData) {
   const userId = String(formData.get("userId") ?? "");
   const newRole = String(formData.get("newRole") ?? "");

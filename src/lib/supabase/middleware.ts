@@ -52,6 +52,25 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Deaktivierte Konten: Claim "user_is_active" kommt wie "user_role" aus dem
+  // Custom Access Token Hook. Deaktivierte Nutzer sehen nur noch die
+  // Info-Seite; das Buchen ist zusätzlich per RLS gesperrt, weil der Claim
+  // bis zum nächsten Token-Refresh (max. 1 Stunde) noch "aktiv" melden kann.
+  if (claims && claims.user_is_active === false) {
+    if (pathname !== "/konto-deaktiviert") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/konto-deaktiviert";
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
+  if (claims && pathname === "/konto-deaktiviert") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/home";
+    return NextResponse.redirect(url);
+  }
+
   if (claims && isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/home";

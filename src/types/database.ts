@@ -14,6 +14,7 @@ export type Database = {
           address_city: string | null;
           birth_date: string | null;
           role: UserRole;
+          is_active: boolean;
         };
         Insert: {
           id: string;
@@ -25,6 +26,7 @@ export type Database = {
           address_city?: string | null;
           birth_date?: string | null;
           role?: UserRole;
+          is_active?: boolean;
         };
         Update: {
           first_name?: string | null;
@@ -35,6 +37,7 @@ export type Database = {
           address_city?: string | null;
           birth_date?: string | null;
           role?: UserRole;
+          is_active?: boolean;
         };
         Relationships: [];
       };
@@ -180,6 +183,7 @@ export type Database = {
           full_name: string | null;
           email: string;
           role: UserRole;
+          is_active: boolean;
         }[];
       };
       get_slot_detail: {
