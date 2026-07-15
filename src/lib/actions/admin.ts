@@ -781,6 +781,54 @@ export async function assignMembership(formData: FormData) {
   redirect(successUrl("/admin/nutzer", "Abo zugewiesen."));
 }
 
+// Kombinierte Einstellung pro Nutzer: Rolle setzen und optional gleich ein Abo
+// (mit Ablaufdatum) zuweisen — alles mit einem "Speichern". Das Entfernen
+// bestehender Abos läuft weiterhin über removeUserMembership.
+export async function updateUserSettings(formData: FormData) {
+  const userId = String(formData.get("userId") ?? "");
+  const newRole = String(formData.get("newRole") ?? "");
+  const membershipIdRaw = String(formData.get("membershipId") ?? "").trim();
+  const endsOn = String(formData.get("endsOn") ?? "").trim() || null;
+
+  if (!userId) {
+    redirect(buildUrl("/admin/nutzer", "Kein Nutzer angegeben."));
+  }
+  if (newRole !== "admin" && newRole !== "instructor" && newRole !== "user") {
+    redirect(buildUrl("/admin/nutzer", "Ungültige Rolle."));
+  }
+
+  const supabase = await createClient();
+
+  const { error: roleError } = await supabase
+    .from("profiles")
+    .update({ role: newRole })
+    .eq("id", userId);
+
+  if (roleError) {
+    redirect(buildUrl("/admin/nutzer", roleError.message));
+  }
+
+  const messages = ["Rolle gespeichert"];
+
+  if (membershipIdRaw) {
+    const { error: aboError } = await supabase.from("user_memberships").insert({
+      user_id: userId,
+      membership_id: Number(membershipIdRaw),
+      ends_on: endsOn,
+    });
+
+    if (aboError) {
+      redirect(buildUrl("/admin/nutzer", aboError.message));
+    }
+    messages.push("Abo zugewiesen");
+  }
+
+  revalidatePath("/admin/nutzer");
+  revalidatePath("/konto");
+  revalidatePath("/", "layout");
+  redirect(successUrl("/admin/nutzer", `${messages.join(" · ")}.`));
+}
+
 export async function removeUserMembership(formData: FormData) {
   const id = Number(formData.get("id"));
   const supabase = await createClient();
