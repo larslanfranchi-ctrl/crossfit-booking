@@ -150,6 +150,15 @@ export type MyBooking = {
 };
 
 export async function getMyUpcomingBookings(): Promise<MyBooking[]> {
+  return getMyBookings("upcoming");
+}
+
+/** Vergangene Buchungen für die Historie, neueste zuerst. */
+export async function getMyPastBookings(): Promise<MyBooking[]> {
+  return getMyBookings("past");
+}
+
+async function getMyBookings(range: "upcoming" | "past"): Promise<MyBooking[]> {
   const supabase = await createClient();
   const user = await getUser();
 
@@ -165,16 +174,25 @@ export async function getMyUpcomingBookings(): Promise<MyBooking[]> {
 
   const slotIds = bookings.map((b) => b.slot_id);
 
+  let slotsQuery = supabase
+    .from("appointment_slots")
+    .select("id, start_time, end_time, course_type_id")
+    .in("id", slotIds);
+
+  slotsQuery =
+    range === "upcoming"
+      ? slotsQuery
+          .gte("start_time", new Date().toISOString())
+          .order("start_time", { ascending: true })
+      : slotsQuery
+          .lt("start_time", new Date().toISOString())
+          .order("start_time", { ascending: false });
+
   const [
     { data: slots, error: slotsError },
     { data: courseTypes, error: courseTypesError },
   ] = await Promise.all([
-    supabase
-      .from("appointment_slots")
-      .select("id, start_time, end_time, course_type_id")
-      .in("id", slotIds)
-      .gte("start_time", new Date().toISOString())
-      .order("start_time", { ascending: true }),
+    slotsQuery,
     supabase.from("course_types").select("id, name"),
   ]);
 

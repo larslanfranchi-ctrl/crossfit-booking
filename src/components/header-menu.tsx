@@ -6,16 +6,11 @@ import {
   CalendarCog,
   CreditCard,
   Dumbbell,
-  LogOut,
   Menu,
   Tags,
-  Ticket,
   Users,
   X,
 } from "lucide-react";
-import { signOut } from "@/lib/actions/auth";
-
-const MEMBER_ITEMS = [{ href: "/abos", label: "Abos", Icon: Ticket }];
 
 const ADMIN_ITEMS = [
   { href: "/admin", label: "Terminverwaltung", Icon: CalendarCog },
@@ -25,13 +20,12 @@ const ADMIN_ITEMS = [
   { href: "/admin/nutzer", label: "Nutzer", Icon: Users },
 ];
 
-// Gebündeltes Header-Menü statt einzelner Icons: Admins bekommen zusätzliche
-// Einträge, alle Einträge tragen Text-Labels (Icon-Tooltips funktionieren
+// Reines Admin-Menü: Mitglieder-Einträge (Abos, Abmelden) leben im
+// Profil-Hub unter /konto, deshalb rendert das Layout dieses Menü nur für
+// Admins. Alle Einträge tragen Text-Labels (Icon-Tooltips funktionieren
 // auf Touch-Geräten nicht).
-export function HeaderMenu({ isAdmin }: { isAdmin: boolean }) {
+export function HeaderMenu() {
   const [open, setOpen] = useState(false);
-
-  const items = isAdmin ? [...MEMBER_ITEMS, ...ADMIN_ITEMS] : MEMBER_ITEMS;
 
   return (
     <div className="relative">
@@ -53,7 +47,7 @@ export function HeaderMenu({ isAdmin }: { isAdmin: boolean }) {
             aria-hidden
           />
           <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-xl border border-stone-200 bg-stone-100 py-2 shadow-lg">
-            {items.map(({ href, label, Icon }) => (
+            {ADMIN_ITEMS.map(({ href, label, Icon }) => (
               <Link
                 key={href}
                 href={href}
@@ -64,16 +58,6 @@ export function HeaderMenu({ isAdmin }: { isAdmin: boolean }) {
                 {label}
               </Link>
             ))}
-            <div className="my-2 border-t border-stone-200" />
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-200 hover:text-stone-900"
-              >
-                <LogOut size={18} className="text-stone-400" />
-                Abmelden
-              </button>
-            </form>
           </div>
         </>
       )}

@@ -21,7 +21,7 @@ export async function updateProfile(formData: FormData) {
 
   if (!firstName || !lastName) {
     redirect(
-      `/konto?error=${encodeURIComponent("Vorname und Nachname dürfen nicht leer sein.")}`,
+      `/konto/daten?error=${encodeURIComponent("Vorname und Nachname dürfen nicht leer sein.")}`,
     );
   }
 
@@ -39,10 +39,10 @@ export async function updateProfile(formData: FormData) {
     .eq("id", user.id);
 
   if (error) {
-    redirect(`/konto?error=${encodeURIComponent(error.message)}`);
+    redirect(`/konto/daten?error=${encodeURIComponent(error.message)}`);
   }
 
   redirect(
-    `/konto?message=${encodeURIComponent("Profil aktualisiert.")}`,
+    `/konto/daten?message=${encodeURIComponent("Profil aktualisiert.")}`,
   );
 }

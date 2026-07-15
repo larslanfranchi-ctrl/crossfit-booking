@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 
 async function getOrigin() {
   const headersList = await headers();
@@ -71,6 +71,54 @@ export async function requestPasswordReset(formData: FormData) {
     `/passwort-vergessen?message=${encodeURIComponent(
       "Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde ein Link zum Zurücksetzen des Passworts verschickt.",
     )}`,
+  );
+}
+
+// Passwortwechsel für eingeloggte Nutzer (/konto/passwort): verlangt das
+// aktuelle Passwort. Anders als updatePassword(), das nach dem
+// Passwort-vergessen-Flow läuft, wo der Nutzer sein Passwort nicht kennt.
+export async function changePassword(formData: FormData) {
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (newPassword !== confirmPassword) {
+    redirect(
+      `/konto/passwort?error=${encodeURIComponent(
+        "Die neuen Passwörter stimmen nicht überein.",
+      )}`,
+    );
+  }
+
+  const user = await getUser();
+  if (!user?.email) {
+    redirect("/login");
+  }
+
+  // Aktuelles Passwort verifizieren: Supabase kennt dafür keinen eigenen
+  // Endpunkt, deshalb ein erneuter Login mit den bestehenden Zugangsdaten.
+  const supabase = await createClient();
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+
+  if (verifyError) {
+    redirect(
+      `/konto/passwort?error=${encodeURIComponent(
+        "Das aktuelle Passwort ist falsch.",
+      )}`,
+    );
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+  if (error) {
+    redirect(`/konto/passwort?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(
+    `/konto/passwort?message=${encodeURIComponent("Passwort geändert.")}`,
   );
 }
 
