@@ -96,8 +96,16 @@ export default async function HomePage({
           return (
             <div
               key={booking.slotId}
-              className="flex items-center gap-4 rounded-xl border border-stone-200 bg-stone-100 p-4"
+              className="relative flex items-center gap-4 rounded-xl border border-stone-200 bg-stone-100 p-4"
             >
+              {/* Ganze Kachel öffnet die Termin-Detailseite. Als absolute
+                  Überlagerung (statt umschließendem Link), damit der Absagen-
+                  Button ein eigenständiges Formular bleibt und weiter funktioniert. */}
+              <Link
+                href={`/kalender/${booking.slotId}`}
+                aria-label="Termin öffnen"
+                className="absolute inset-0 z-0 rounded-xl"
+              />
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-stone-300 bg-stone-50 leading-none">
                 <span className="text-xl font-black tabular-nums text-primary-600">
                   {start.getDate()}
@@ -115,13 +123,13 @@ export default async function HomePage({
                   {booking.courseTypeName ?? "Unbekannte Kursart"}
                 </div>
               </div>
-              <form action={cancelBooking}>
+              <form action={cancelBooking} className="relative z-10">
                 <input type="hidden" name="slotId" value={booking.slotId} />
                 <input type="hidden" name="day" value={toDateKey(start)} />
                 <input type="hidden" name="returnTo" value="home" />
                 <ConfirmSubmitButton
                   confirmMessage="Buchung wirklich stornieren?"
-                  className="shrink-0 rounded border border-primary-600 px-3 py-1.5 text-sm font-semibold text-primary-600 hover:bg-primary-50"
+                  className="shrink-0 rounded border border-primary-600 bg-stone-100 px-3 py-1.5 text-sm font-semibold text-primary-600 hover:bg-primary-50"
                 >
                   Absagen
                 </ConfirmSubmitButton>
