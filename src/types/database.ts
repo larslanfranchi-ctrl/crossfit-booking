@@ -189,7 +189,28 @@ export type Database = {
           user_id: string;
         };
         Update: Record<string, never>;
-        Relationships: [];
+        // Die Fremdschlüssel aus 005_bookings.sql. supabase-js löst
+        // eingebettete Selects ("appointment_slots(...)" bzw. umgekehrt
+        // "bookings(...)") ausschließlich über diese Einträge auf - ohne sie
+        // typisiert ein Join als Fehlertyp, obwohl er zur Laufzeit
+        // funktionieren würde. Die Namen sind die von Postgres automatisch
+        // vergebenen Constraint-Namen (<tabelle>_<spalte>_fkey).
+        Relationships: [
+          {
+            foreignKeyName: "bookings_slot_id_fkey";
+            columns: ["slot_id"];
+            isOneToOne: false;
+            referencedRelation: "appointment_slots";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bookings_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
@@ -221,6 +242,14 @@ export type Database = {
         Returns: {
           instructor_name: string | null;
           participant_names: string[] | null;
+        }[];
+      };
+      get_my_checkin_balance: {
+        Args: Record<string, never>;
+        Returns: {
+          kind: "none" | "unlimited" | "limited";
+          remaining: number | null;
+          period: CheckinPeriod | null;
         }[];
       };
     };

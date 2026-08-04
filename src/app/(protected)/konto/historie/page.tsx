@@ -8,8 +8,15 @@ function monthAbbr(date: Date): string {
     .replace(".", "");
 }
 
+// Anzahl der angezeigten vergangenen Termine. Begrenzt, damit die Seite nicht
+// mit der gesamten Mitgliedschaftsdauer mitwächst.
+const PAST_BOOKINGS_LIMIT = 50;
+
 export default async function HistoriePage() {
-  const bookings = await getMyPastBookings();
+  // Ein Eintrag mehr als angezeigt wird, um zu erkennen, ob ältere existieren.
+  const fetched = await getMyPastBookings(PAST_BOOKINGS_LIMIT + 1);
+  const hasMore = fetched.length > PAST_BOOKINGS_LIMIT;
+  const bookings = fetched.slice(0, PAST_BOOKINGS_LIMIT);
 
   return (
     <div className="mx-auto max-w-md">
@@ -69,6 +76,12 @@ export default async function HistoriePage() {
           );
         })}
       </div>
+
+      {hasMore && (
+        <p className="mt-3 text-xs text-stone-400">
+          Es werden nur die letzten {PAST_BOOKINGS_LIMIT} Termine angezeigt.
+        </p>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { createClient, getUser } from "@/lib/supabase/server";
-import { addDays, startOfWeek, toDateKey } from "@/lib/date-utils";
+import { toDateKey } from "@/lib/date-utils";
 import type { CheckinPeriod } from "@/types/database";
 
 export type MembershipItem = {
@@ -94,6 +94,10 @@ export type CheckinBalance =
  * Verbleibende Check-ins des eingeloggten Nutzers - Anzeige-Pendant zum
  * Buchungs-Trigger enforce_checkin_limit (039). Bei mehreren limitierten
  * Abos zählt das mit dem größten Restkontingent.
+ *
+ * Gezählt wird in der Datenbank (040): die frühere TypeScript-Variante lud
+ * dafür die komplette Buchungshistorie des Nutzers samt Terminen, obwohl am
+ * Ende nur eine Zahl angezeigt wird.
  */
 export async function getMyCheckinBalance(): Promise<CheckinBalance> {
   const supabase = await createClient();
@@ -101,84 +105,19 @@ export async function getMyCheckinBalance(): Promise<CheckinBalance> {
 
   if (!user) return { kind: "none" };
 
-  const today = toDateKey(new Date());
+  const { data, error } = await supabase.rpc("get_my_checkin_balance");
 
-  const [
-    { data: assignments, error: assignmentsError },
-    { data: catalog, error: catalogError },
-  ] = await Promise.all([
-    supabase
-      .from("user_memberships")
-      .select("membership_id, starts_on, ends_on")
-      .eq("user_id", user.id)
-      .lte("starts_on", today),
-    supabase.from("memberships").select("id, checkin_limit, checkin_period"),
-  ]);
+  if (error) throw error;
 
-  if (assignmentsError) throw assignmentsError;
-  if (catalogError) throw catalogError;
+  const row = data?.[0];
+  if (!row || row.kind === "none") return { kind: "none" };
+  if (row.kind === "unlimited") return { kind: "unlimited" };
 
-  const active = (assignments ?? []).filter(
-    (a) => !a.ends_on || a.ends_on >= today,
-  );
-  if (active.length === 0) return { kind: "none" };
-
-  const catalogById = new Map((catalog ?? []).map((m) => [m.id, m]));
-
-  if (
-    active.some((a) => catalogById.get(a.membership_id)?.checkin_limit == null)
-  ) {
-    return { kind: "unlimited" };
-  }
-
-  // Alle Buchungen des Nutzers mit Slot-Datum laden, um die verbrauchten
-  // Check-ins pro Abo-Fenster zu zählen.
-  const { data: bookings, error: bookingsError } = await supabase
-    .from("bookings")
-    .select("slot_id")
-    .eq("user_id", user.id);
-
-  if (bookingsError) throw bookingsError;
-
-  let slotDays: string[] = [];
-  if (bookings && bookings.length > 0) {
-    const { data: slots, error: slotsError } = await supabase
-      .from("appointment_slots")
-      .select("start_time")
-      .in(
-        "id",
-        bookings.map((b) => b.slot_id),
-      );
-
-    if (slotsError) throw slotsError;
-    slotDays = (slots ?? []).map((s) => toDateKey(new Date(s.start_time)));
-  }
-
-  const weekStart = toDateKey(startOfWeek(new Date()));
-  const weekEnd = toDateKey(addDays(startOfWeek(new Date()), 7));
-
-  let best: { remaining: number; period: CheckinPeriod } | null = null;
-
-  for (const a of active) {
-    const membership = catalogById.get(a.membership_id);
-    if (!membership || membership.checkin_limit == null) continue;
-
-    const used =
-      membership.checkin_period === "week"
-        ? slotDays.filter((d) => d >= weekStart && d < weekEnd).length
-        : slotDays.filter(
-            (d) => d >= a.starts_on && (!a.ends_on || d <= a.ends_on),
-          ).length;
-
-    const remaining = Math.max(0, membership.checkin_limit - used);
-    if (!best || remaining > best.remaining) {
-      best = { remaining, period: membership.checkin_period };
-    }
-  }
-
-  return best
-    ? { kind: "limited", ...best }
-    : { kind: "none" };
+  return {
+    kind: "limited",
+    remaining: row.remaining ?? 0,
+    period: row.period ?? "total",
+  };
 }
 
 /** Kommagetrennte Kursliste in einzelne Chips zerlegen. */

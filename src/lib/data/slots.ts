@@ -153,31 +153,34 @@ export async function getMyUpcomingBookings(): Promise<MyBooking[]> {
   return getMyBookings("upcoming");
 }
 
-/** Vergangene Buchungen für die Historie, neueste zuerst. */
-export async function getMyPastBookings(): Promise<MyBooking[]> {
-  return getMyBookings("past");
+/**
+ * Vergangene Buchungen für die Historie, neueste zuerst. Ohne "limit" wächst
+ * die Liste mit der gesamten Mitgliedschaftsdauer - die Historie-Seite gibt
+ * deshalb eine Obergrenze vor.
+ */
+export async function getMyPastBookings(limit?: number): Promise<MyBooking[]> {
+  return getMyBookings("past", limit);
 }
 
-async function getMyBookings(range: "upcoming" | "past"): Promise<MyBooking[]> {
+async function getMyBookings(
+  range: "upcoming" | "past",
+  limit?: number,
+): Promise<MyBooking[]> {
   const supabase = await createClient();
   const user = await getUser();
 
   if (!user) return [];
 
-  const { data: bookings, error: bookingsError } = await supabase
-    .from("bookings")
-    .select("slot_id")
-    .eq("user_id", user.id);
-
-  if (bookingsError) throw bookingsError;
-  if (!bookings || bookings.length === 0) return [];
-
-  const slotIds = bookings.map((b) => b.slot_id);
-
+  // Einstieg bewusst über appointment_slots statt über bookings: so laufen
+  // Zeitfilter und Sortierung auf der Haupttabelle (idx_appointment_slots_
+  // start_time), und der !inner-Join schränkt auf die eigenen Buchungen ein.
+  // Die frühere Variante lud erst sämtliche Buchungen des Nutzers und schickte
+  // deren IDs per .in() zurück an PostgREST - das wuchs mit der kompletten
+  // Historie und landete vollständig in der Query-URL.
   let slotsQuery = supabase
     .from("appointment_slots")
-    .select("id, start_time, end_time, course_type_id")
-    .in("id", slotIds);
+    .select("id, start_time, end_time, course_type_id, bookings!inner(user_id)")
+    .eq("bookings.user_id", user.id);
 
   slotsQuery =
     range === "upcoming"
@@ -187,6 +190,10 @@ async function getMyBookings(range: "upcoming" | "past"): Promise<MyBooking[]> {
       : slotsQuery
           .lt("start_time", new Date().toISOString())
           .order("start_time", { ascending: false });
+
+  if (limit !== undefined) {
+    slotsQuery = slotsQuery.limit(limit);
+  }
 
   const [
     { data: slots, error: slotsError },

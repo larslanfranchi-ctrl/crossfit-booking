@@ -25,18 +25,23 @@ export default async function AdminPage({
   searchParams: Promise<{ error?: string; message?: string; edit?: string }>;
 }) {
   const params = await searchParams;
-  const [slots, courseTypes, instructors, trainings] = await Promise.all([
-    getSlotsWithParticipants("upcoming"),
+  // Ein Eintrag mehr als angezeigt wird, um zu erkennen, ob weitere existieren.
+  const [fetchedSlots, courseTypes, instructors, trainings] = await Promise.all([
+    getSlotsWithParticipants("upcoming", UPCOMING_SLOTS_LIMIT + 1),
     getCourseTypes(),
     getInstructors(),
     getTrainings(),
   ]);
+  const hasMoreUpcoming = fetchedSlots.length > UPCOMING_SLOTS_LIMIT;
+  const slots = fetchedSlots.slice(0, UPCOMING_SLOTS_LIMIT);
 
   const activeCourseTypes = courseTypes.filter((c) => c.is_active);
   const activeTrainings = trainings.filter((t) => t.is_active);
 
   const editId = params.edit ? Number(params.edit) : null;
-  const editSlot = editId ? slots.find((s) => s.id === editId) : undefined;
+  // Bewusst gegen die ungekürzte Liste: ein Termin soll auch dann bearbeitbar
+  // bleiben, wenn er knapp hinter der Anzeigegrenze liegt.
+  const editSlot = editId ? fetchedSlots.find((s) => s.id === editId) : undefined;
   const isEditing = Boolean(editId && editSlot);
 
   const singleForm = (
@@ -510,6 +515,11 @@ export default async function AdminPage({
             </div>
           ))}
         </div>
+        {hasMoreUpcoming && (
+          <p className="mt-3 text-xs text-stone-500">
+            Es werden nur die nächsten {UPCOMING_SLOTS_LIMIT} Termine angezeigt.
+          </p>
+        )}
       </form>
 
       <Suspense
@@ -532,6 +542,11 @@ export default async function AdminPage({
     </div>
   );
 }
+
+// Obergrenze für die kommenden Termine. Bewusst großzügig: sie ist ein
+// Schutz gegen unbegrenztes Wachstum (ein Serientermin legt bis zu 52 Wochen
+// im Voraus an), nicht eine Blätterfunktion.
+const UPCOMING_SLOTS_LIMIT = 200;
 
 // Anzahl der angezeigten vergangenen Termine. Begrenzt, damit die Admin-Seite
 // nicht mit der gesamten Termin-Historie (inkl. Buchungen und Profilen)

@@ -145,17 +145,21 @@ export async function getUserMembershipAssignments(): Promise<
 
 export async function getSlotsWithParticipants(
   when: "upcoming" | "past",
-  // Ohne Limit wächst die Liste vergangener Termine (inkl. Buchungen und
-  // Profilen) unbegrenzt mit - die Admin-Seite würde jede Woche langsamer.
+  // Ohne Limit wächst die Liste (inkl. Buchungen und Profilen) unbegrenzt mit:
+  // vergangene Termine mit jeder Woche, kommende mit jedem Serientermin, der
+  // bis zu 52 Wochen im Voraus anlegt.
   limit?: number,
 ): Promise<SlotWithParticipants[]> {
   const supabase = await createClient();
 
   const now = new Date().toISOString();
+  // Die Buchungen werden direkt mit eingebettet statt in einer zweiten Query
+  // per .in("slot_id", slotIds) nachgeladen: spart einen Round-Trip und hält
+  // die Query-URL konstant kurz, unabhängig von der Anzahl der Termine.
   let slotsQuery = supabase
     .from("appointment_slots")
     .select(
-      "id, start_time, end_time, capacity, course_type_id, description, instructor_id, training_id",
+      "id, start_time, end_time, capacity, course_type_id, description, instructor_id, training_id, bookings(user_id)",
     )
     .order("start_time", { ascending: when === "upcoming" });
 
@@ -185,20 +189,16 @@ export async function getSlotsWithParticipants(
     (trainings ?? []).map((t) => [t.id, t.name]),
   );
 
-  const slotIds = slots.map((s) => s.id);
-
-  const { data: bookings, error: bookingsError } = await supabase
-    .from("bookings")
-    .select("slot_id, user_id")
-    .in("slot_id", slotIds);
-
-  if (bookingsError) throw bookingsError;
-
   const instructorIds = slots
     .map((s) => s.instructor_id)
     .filter((id): id is string => Boolean(id));
+  // Nur die tatsächlich vorkommenden Nutzer nachladen. Die Liste ist durch die
+  // Mitgliederzahl begrenzt, nicht durch die Anzahl der Termine.
   const userIds = Array.from(
-    new Set([...(bookings ?? []).map((b) => b.user_id), ...instructorIds]),
+    new Set([
+      ...slots.flatMap((s) => s.bookings.map((b) => b.user_id)),
+      ...instructorIds,
+    ]),
   );
 
   const { data: profiles, error: profilesError } =
@@ -234,11 +234,9 @@ export async function getSlotsWithParticipants(
     trainingName: slot.training_id
       ? (trainingNameById.get(slot.training_id) ?? null)
       : null,
-    participants: (bookings ?? [])
-      .filter((b) => b.slot_id === slot.id)
-      .map((b) => ({
-        userId: b.user_id,
-        fullName: nameByUserId.get(b.user_id) ?? null,
-      })),
+    participants: slot.bookings.map((b) => ({
+      userId: b.user_id,
+      fullName: nameByUserId.get(b.user_id) ?? null,
+    })),
   }));
 }
