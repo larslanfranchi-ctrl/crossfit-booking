@@ -42,5 +42,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Nutzer-Importe (z.B. nutzer-import.csv): enthalten echte Mitgliederdaten -
+# Name, E-Mail, Telefonnummer. Einmal committet bekommt man sie aus der
+# Git-Historie praktisch nicht mehr heraus, deshalb pauschal alle CSVs.
+*.csv
+
 .vercel
 .env*
