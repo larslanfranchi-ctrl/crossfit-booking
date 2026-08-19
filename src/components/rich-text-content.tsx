@@ -1,5 +1,11 @@
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 
+// sanitize-html statt isomorphic-dompurify: DOMPurify braucht ein DOM und
+// zieht auf dem Server jsdom mit (~9,7 MB samt tough-cookie, whatwg-url,
+// parse5). Das landete im Function-Bundle der Termin-Detailseite und
+// verlängerte deren Cold Start. sanitize-html parst mit htmlparser2 und
+// kommt ohne DOM aus - rund 1,8 MB, davon nichts doppelt, weil postcss
+// über Tailwind ohnehin im Baum ist.
 const ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "ul", "ol", "li"];
 
 export function RichTextContent({ html }: { html: string }) {
@@ -12,9 +18,13 @@ export function RichTextContent({ html }: { html: string }) {
     );
   }
 
-  const safeHtml = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR: [],
+  // Wie zuvor: nicht erlaubte Tags fallen weg, ihr Textinhalt bleibt
+  // erhalten. Ausnahme sind script/style & Co., deren Inhalt sanitize-html
+  // per Default komplett verwirft (nonTextTags) - dasselbe Verhalten wie
+  // DOMPurify. Attribute sind durchgängig gesperrt.
+  const safeHtml = sanitizeHtml(html, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: {},
   });
 
   return (
