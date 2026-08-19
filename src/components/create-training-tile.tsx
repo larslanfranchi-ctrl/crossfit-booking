@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { RichTextEditor } from "@/components/rich-text-editor";
+import { RichTextEditorLazy } from "@/components/rich-text-editor-lazy";
 
 export function CreateTrainingTile({
   createTraining,
@@ -53,7 +53,7 @@ export function CreateTrainingTile({
         </div>
         <div>
           <label className="block text-sm font-medium">Inhalt</label>
-          <RichTextEditor name="content" />
+          <RichTextEditorLazy name="content" />
         </div>
         <button
           type="submit"

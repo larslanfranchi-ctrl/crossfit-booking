@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { RichTextEditor } from "@/components/rich-text-editor";
+import { RichTextEditorLazy } from "@/components/rich-text-editor-lazy";
 import type { TrainingItem } from "@/lib/data/admin";
 
 export function TrainingTile({
@@ -111,7 +111,10 @@ export function TrainingTile({
         </div>
         <div>
           <label className="block text-sm font-medium">Inhalt</label>
-          <RichTextEditor name="content" defaultValueHtml={training.content} />
+          <RichTextEditorLazy
+            name="content"
+            defaultValueHtml={training.content}
+          />
         </div>
         <button
           type="submit"
