@@ -68,6 +68,7 @@ export type SlotDetail = {
   description: string | null;
   bookedCount: number;
   isBookedByMe: boolean;
+  courseTypeId: number;
   courseTypeName: string | null;
   instructorName: string | null;
   trainingName: string | null;
@@ -133,6 +134,7 @@ export async function getSlotById(id: number): Promise<SlotDetail | null> {
     description: slot.description,
     bookedCount: participantNames.length,
     isBookedByMe: Boolean(myBooking),
+    courseTypeId: slot.course_type_id,
     courseTypeName: courseType?.name ?? null,
     instructorName: detail?.instructor_name ?? null,
     trainingName: training?.name ?? null,

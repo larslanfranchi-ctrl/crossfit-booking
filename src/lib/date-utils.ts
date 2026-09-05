@@ -92,3 +92,15 @@ export function formatTime(iso: string): string {
     minute: "2-digit",
   });
 }
+
+/**
+ * Ausgeschriebenes Datum für die Termin-Detailseite ("Sonntag, 6. September").
+ * Bewusst ohne Jahr - der Kalender zeigt ohnehin nur nahe Termine.
+ */
+export function formatDateLong(date: Date): string {
+  return date.toLocaleDateString("de-DE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
