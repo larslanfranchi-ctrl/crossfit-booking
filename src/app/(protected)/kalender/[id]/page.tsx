@@ -299,7 +299,7 @@ export default async function SlotDetailPage({
                   />
                   <button
                     type="submit"
-                    className="rounded-xl bg-primary-600 px-8 py-3 text-sm font-bold text-black hover:bg-primary-700"
+                    className="rounded-xl bg-primary-600 px-8 py-3 text-sm font-bold text-black brand-fill"
                   >
                     Buchen
                   </button>

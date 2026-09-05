@@ -37,7 +37,7 @@ export default async function HistoriePage() {
           </p>
           <Link
             href="/kalender"
-            className="inline-block rounded bg-primary-600 px-4 py-2 text-sm font-semibold text-black hover:bg-primary-700"
+            className="inline-block rounded bg-primary-600 px-4 py-2 text-sm font-semibold text-black brand-fill"
           >
             Termin buchen
           </Link>
@@ -50,7 +50,7 @@ export default async function HistoriePage() {
           return (
             <div
               key={booking.slotId}
-              className="flex items-center gap-4 rounded-xl border border-stone-200 bg-stone-100 p-4"
+              className="flex items-center gap-4 rounded-xl border border-stone-200 bg-stone-100 glass p-4"
             >
               <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-stone-300 bg-stone-50 leading-none">
                 <span className="text-xl font-black tabular-nums text-primary-600">

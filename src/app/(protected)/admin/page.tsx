@@ -182,7 +182,7 @@ export default async function AdminPage({
           <div className="col-span-2 flex items-end gap-3 sm:col-span-4">
             <button
               type="submit"
-              className="rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
+              className="rounded bg-primary-600 px-4 py-2 font-semibold text-black brand-fill"
             >
               {isEditing ? "Änderungen speichern" : "Termin anlegen"}
             </button>
@@ -363,7 +363,7 @@ export default async function AdminPage({
             <div className="col-span-2 flex items-end sm:col-span-4">
               <button
                 type="submit"
-                className="rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
+                className="rounded bg-primary-600 px-4 py-2 font-semibold text-black brand-fill"
               >
                 Serientermin anlegen
               </button>
@@ -409,7 +409,7 @@ export default async function AdminPage({
             <div className="col-span-2">
               <button
                 type="submit"
-                className="rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
+                className="rounded bg-primary-600 px-4 py-2 font-semibold text-black brand-fill"
               >
                 Tag kopieren
               </button>
@@ -530,7 +530,7 @@ export default async function AdminPage({
               {Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-16 rounded border border-stone-200 bg-stone-100"
+                  className="h-16 rounded border border-stone-200 bg-stone-100 glass"
                 />
               ))}
             </div>

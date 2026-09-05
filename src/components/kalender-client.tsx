@@ -35,7 +35,7 @@ const STATUS_LABEL: Record<Tone, string> = {
 const STATUS_TEXT_COLOR: Record<Tone, string> = {
   available: "text-success-600",
   full: "text-accent-600",
-  past: "text-stone-400",
+  past: "text-stone-350",
   booked: "text-primary-600",
 };
 
@@ -171,7 +171,7 @@ export function KalenderClient({
             <span className="text-xs text-stone-400">▾</span>
           </button>
           {pickerOpen && (
-            <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-stone-200 bg-stone-100 p-3 shadow-lg">
+            <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-xl border border-stone-200 bg-stone-100 glass p-3">
               <div className="mb-2 flex items-center justify-between">
                 <button
                   type="button"
@@ -213,7 +213,7 @@ export function KalenderClient({
                       onClick={() => selectDay(date)}
                       className={`flex h-8 w-8 items-center justify-center rounded-full text-xs ${
                         isSelectedPickerDay
-                          ? "bg-primary-600 text-black"
+                          ? "bg-primary-600 brand-fill text-black"
                           : inCurrentMonth
                             ? "text-stone-700 hover:bg-stone-100"
                             : "text-stone-300 hover:bg-stone-50"
@@ -261,7 +261,7 @@ export function KalenderClient({
                 ? null
                 : hasAvailable
                   ? "bg-success-500"
-                  : "bg-stone-400";
+                  : "bg-stone-350";
             return (
               <button
                 type="button"
@@ -275,7 +275,7 @@ export function KalenderClient({
                 <span
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
                     isSelected
-                      ? "bg-primary-600 text-black"
+                      ? "bg-primary-600 brand-fill text-black"
                       : isToday
                         ? "text-primary-600 ring-1 ring-primary-500"
                         : "text-stone-700"
@@ -336,7 +336,7 @@ export function KalenderClient({
           return (
             <div
               key={slot.id}
-              className="flex items-center gap-3 rounded-xl border border-stone-200 border-l-4 bg-stone-100 py-3 pl-3 pr-3"
+              className="flex items-center gap-3 rounded-xl border border-stone-200 border-l-4 bg-stone-100 glass py-3 pl-3 pr-3"
               style={{ borderLeftColor: stripeColor }}
             >
               <Link href={`/kalender/${slot.id}`} className="min-w-0 flex-1">
@@ -367,7 +367,7 @@ export function KalenderClient({
                   onClick={() => handleCancel(slot.id)}
                   disabled={isSlotPending}
                   aria-label="Absagen"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-600 text-black hover:bg-primary-700 disabled:opacity-60"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-600 text-black brand-fill disabled:opacity-60"
                 >
                   <X size={18} strokeWidth={2.5} />
                 </button>

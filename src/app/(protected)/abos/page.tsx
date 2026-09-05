@@ -19,7 +19,7 @@ export default async function AbosPage() {
         {abos.map((abo) => (
           <div
             key={abo.id}
-            className="rounded-xl border border-stone-200 bg-stone-100 p-4"
+            className="rounded-xl border border-stone-200 bg-stone-100 glass p-4"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">

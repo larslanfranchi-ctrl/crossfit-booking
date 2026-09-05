@@ -46,7 +46,7 @@ export default async function KontoPage() {
   return (
     <div className="mx-auto max-w-md">
       <div className="mb-8 flex flex-col items-center text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-600 text-2xl font-extrabold text-black">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary-600 brand-fill text-2xl font-extrabold text-black">
           {initials || <UserRound size={32} />}
         </div>
         {fullName && <div className="mt-3 font-semibold">{fullName}</div>}
@@ -62,7 +62,7 @@ export default async function KontoPage() {
             {myAbos.map((abo) => (
               <div
                 key={abo.id}
-                className="rounded-xl border border-stone-200 bg-stone-100 p-4"
+                className="rounded-xl border border-stone-200 bg-stone-100 glass p-4"
               >
                 <div className="font-semibold">{abo.name}</div>
                 <div className="mt-0.5 text-xs text-stone-500">
@@ -88,7 +88,7 @@ export default async function KontoPage() {
           <h2 className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-stone-400">
             {title}
           </h2>
-          <div className="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-stone-100">
+          <div className="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-stone-100 glass">
             {items.map(({ href, label, Icon }) => (
               <Link
                 key={href}
@@ -107,7 +107,7 @@ export default async function KontoPage() {
       <form action={signOut}>
         <button
           type="submit"
-          className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-stone-100 px-4 py-3.5 text-sm font-medium text-stone-700 hover:bg-stone-200"
+          className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-stone-100 glass px-4 py-3.5 text-sm font-medium text-stone-700 hover:bg-stone-200"
         >
           <LogOut size={18} className="text-stone-400" />
           <span className="flex-1 text-left">Abmelden</span>

@@ -31,7 +31,7 @@ function formatDateDe(iso: string): string {
 
 function StatTile({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-stone-100 px-3 py-2">
+    <div className="rounded-lg border border-stone-200 bg-stone-100 glass px-3 py-2">
       <div className="text-xl font-semibold tabular-nums">{value}</div>
       <div className="text-xs text-stone-500">{label}</div>
     </div>
@@ -260,7 +260,7 @@ export function NutzerList({
 
                   <form
                     action={updateUserSettings}
-                    className="flex flex-wrap items-end gap-3 rounded-lg border border-stone-200 bg-stone-100 p-3"
+                    className="flex flex-wrap items-end gap-3 rounded-lg border border-stone-200 bg-stone-100 glass p-3"
                   >
                     <input type="hidden" name="userId" value={u.id} />
                     <label className="flex flex-col gap-1 text-xs text-stone-400">
@@ -300,7 +300,7 @@ export function NutzerList({
                     </label>
                     <button
                       type="submit"
-                      className="rounded bg-primary-600 px-4 py-2 text-sm font-semibold text-black hover:bg-primary-700"
+                      className="rounded bg-primary-600 px-4 py-2 text-sm font-semibold text-black brand-fill"
                     >
                       Speichern
                     </button>

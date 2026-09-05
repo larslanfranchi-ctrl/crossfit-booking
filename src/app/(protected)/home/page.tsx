@@ -48,7 +48,7 @@ export default async function HomePage({
       )}
 
       <div className="mb-6 grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-stone-200 bg-stone-100 p-4">
+        <div className="rounded-xl border border-stone-200 bg-stone-100 glass p-4">
           <div className="text-2xl font-extrabold tabular-nums text-primary-600">
             {thisWeekCount}
           </div>
@@ -56,7 +56,7 @@ export default async function HomePage({
             Diese Woche
           </div>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-stone-100 p-4">
+        <div className="rounded-xl border border-stone-200 bg-stone-100 glass p-4">
           <div
             className={`text-2xl font-extrabold tabular-nums ${
               balance.kind === "none" ? "text-stone-500" : "text-primary-600"
@@ -83,7 +83,7 @@ export default async function HomePage({
           </p>
           <Link
             href="/kalender"
-            className="inline-block rounded bg-primary-600 px-4 py-2 text-sm font-semibold text-black hover:bg-primary-700"
+            className="inline-block rounded bg-primary-600 px-4 py-2 text-sm font-semibold text-black brand-fill"
           >
             Termin buchen
           </Link>
@@ -96,7 +96,7 @@ export default async function HomePage({
           return (
             <div
               key={booking.slotId}
-              className="relative flex items-center gap-4 rounded-xl border border-stone-200 bg-stone-100 p-4"
+              className="relative flex items-center gap-4 rounded-xl border border-stone-200 bg-stone-100 glass p-4"
             >
               {/* Ganze Kachel öffnet die Termin-Detailseite. Als absolute
                   Überlagerung (statt umschließendem Link), damit der Absagen-

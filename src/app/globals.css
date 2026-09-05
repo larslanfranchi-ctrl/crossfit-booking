@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  /* Lionsoul Performance — tiefes Schwarz, hoher Kontrast, Gelb als Akzent. */
-  --background: #0a0a0b;
-  --foreground: #fafafa;
+  /* Lionsoul Performance — "Onyx & Amber Glass": kühl-blaugraues Schwarz,
+     Gelb als einziger Akzent. Die Neutralrampe ist bewusst kühl getönt: auf
+     einem warmgrauen Grund lesen sich aufgehellte Flächen als grauer Kasten,
+     auf einem kühlen als Glas. */
+  --background: #08090c;
+  --foreground: #fafbfd;
   /* Die App committet sich bewusst auf ein dunkles Theme (kein Light-Modus).
      color-scheme: dark verhindert, dass mobile Browser eigene Invertierungen
      anwenden, und sorgt für dunkle Formular-Controls/Scrollbars. */
@@ -16,30 +19,46 @@
   --font-sans: var(--font-geist-sans);
 
   /* Flächen */
-  --color-surface: #141416;
+  --color-surface: #101218;
 
-  /* Marken-Gelb (primary = Aktionen & Akzent). Text auf primary ist schwarz. */
+  /* Glas: die Spiegelkante ist der helle Rand, den eine erhabene Fläche oben
+     bekommt - sie macht aus einer Füllung eine Kante. Immer im Paar mit einem
+     Schatten verwenden, sonst schwebt die Fläche ohne Grund. */
+  --color-glass: rgba(255, 255, 255, 0.06);
+  --color-glass-edge: rgba(255, 255, 255, 0.14);
+
+  /* Tiefe. shadow-card für alles Erhabene, shadow-bar für Leisten, die über
+     scrollendem Inhalt liegen (wirft nach oben), shadow-brand für das Glühen
+     unter gelben Flächen. */
+  --shadow-card: 0 14px 30px -14px rgb(0 0 0 / 0.9), 0 2px 6px -2px rgb(0 0 0 / 0.6);
+  --shadow-bar: 0 -14px 34px -14px rgb(0 0 0 / 0.95);
+  --shadow-brand: 0 10px 24px -10px rgb(255 224 27 / 0.55);
+
+  /* Marken-Gelb (primary = Aktionen & Akzent). Text auf primary ist schwarz.
+     500/600 sind unverändert das Logo-Gelb; 400 ist neu und dient nur als
+     Glanzkante im Verlauf gelber Flächen. */
   --color-primary-50: #201d08;
+  --color-primary-400: #fff27a;
   --color-primary-500: #ffe01b;
   --color-primary-600: #ffe01b;
-  --color-primary-700: #e6c200;
+  --color-primary-700: #d9bd00;
 
   /* Status "frei" / Erfolg (Grün) */
-  --color-success-50: #10231a;
-  --color-success-500: #6fcf97;
-  --color-success-600: #6fcf97;
-  --color-success-700: #8fe0ad;
+  --color-success-50: #0e2119;
+  --color-success-500: #5fd39b;
+  --color-success-600: #5fd39b;
+  --color-success-700: #8ce3ba;
 
-  /* Status "ausgebucht" (Rot) — ersetzt die frühere Terrakotta-Akzentfarbe */
-  --color-accent-200: #e0565b;
-  --color-accent-400: #e0565b;
-  --color-accent-600: #e0565b;
-  --color-accent-900: #3a1518;
+  /* Status "ausgebucht" (Rot) */
+  --color-accent-200: #ef5a63;
+  --color-accent-400: #ef5a63;
+  --color-accent-600: #ef5a63;
+  --color-accent-900: #3a161a;
 
-  --color-error-50: #2a1113;
-  --color-error-100: #3a1518;
-  --color-error-200: #e0565b;
-  --color-error-700: #f2868a;
+  --color-error-50: #2a1216;
+  --color-error-100: #3a161a;
+  --color-error-200: #ef5a63;
+  --color-error-700: #f58e94;
 
   --color-warning-50: #2a2205;
   --color-warning-700: #f5d06a;
@@ -47,21 +66,80 @@
   /* Neutral-Rampe (Stone) auf Dark invertiert: stone-50 = dunkelste Fläche,
      stone-900 = hellster Text. Dadurch werden die bestehenden stone-Utilities
      im gesamten Projekt automatisch dunkel-tauglich. Ausnahme: die Bottom-Nav
-     setzt ihre dunkle Fläche jetzt explizit (nicht mehr über stone-900). */
-  --color-stone-50: #141416;
-  --color-stone-100: #1d1d20;
-  --color-stone-200: #2a2a2e;
-  --color-stone-300: #3a3a40;
-  --color-stone-400: #8a8a8f;
-  --color-stone-500: #a1a1a6;
-  --color-stone-600: #c4c4c8;
-  --color-stone-700: #dcdcdf;
-  --color-stone-800: #ededef;
-  --color-stone-900: #fafafa;
+     setzt ihre Fläche über `glass-bar`. */
+  --color-stone-50: #101218;
+  --color-stone-100: #171a21;
+  --color-stone-200: #232733;
+  --color-stone-300: #333846;
+  --color-stone-350: #6d7180;
+  --color-stone-400: #8b90a0;
+  --color-stone-500: #a4a9b8;
+  --color-stone-600: #c6cad5;
+  --color-stone-700: #dde0e8;
+  --color-stone-800: #edeff3;
+  --color-stone-900: #fafbfd;
+}
+
+/* Erhabene Fläche: Glanz von oben links, helle Spiegelkante oben, dunkle
+   Fusskante unten, Schatten nach aussen. Ergänzt `bg-stone-100` (die Füllung
+   bleibt dort), damit Rahmen- und Rundungs-Utilities weiter greifen. */
+@utility glass {
+  background-image: linear-gradient(
+    158deg,
+    rgb(255 255 255 / 0.075),
+    rgb(255 255 255 / 0.026) 45%,
+    rgb(255 255 255 / 0.012)
+  );
+  box-shadow:
+    inset 0 1px 0 var(--color-glass-edge),
+    inset 0 -1px 0 rgb(0 0 0 / 0.5),
+    var(--shadow-card);
+}
+
+/* Leiste, die über scrollendem Inhalt liegt: Header, Bottom-Nav, Aktionsleiste.
+   Halbtransparent plus Blur - der Inhalt darunter bleibt als Bewegung sichtbar. */
+@utility glass-bar {
+  background-image: linear-gradient(180deg, rgb(24 27 34 / 0.74), rgb(8 9 12 / 0.94));
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 var(--color-glass-edge),
+    var(--shadow-bar);
+}
+
+/* Gelbe Fläche mit Verlauf und Glühen - für die eine primäre Aktion pro
+   Bildschirm. Ergänzt `bg-primary-600` (bleibt als Fallback-Füllung) und
+   bringt seinen Hover selbst mit, weil eine Hintergrundfarbe unter dem
+   Verlauf nicht sichtbar wäre. */
+@utility brand-fill {
+  background-image: linear-gradient(
+    180deg,
+    var(--color-primary-400),
+    var(--color-primary-500) 42%,
+    #e8ca09
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    inset 0 -1px 0 rgb(0 0 0 / 0.28),
+    var(--shadow-brand);
+
+  &:hover {
+    background-image: linear-gradient(
+      180deg,
+      #fff9b8,
+      var(--color-primary-400) 42%,
+      var(--color-primary-500)
+    );
+  }
 }
 
 body {
-  background: var(--background);
+  /* Zwei sehr schwache Lichtquellen - Marken-Gelb oben rechts, kühles Blau
+     unten links. Sie geben dem Glas etwas zum Spiegeln; ohne sie ist der
+     Grund zu flach dafür. */
+  background:
+    radial-gradient(120% 55% at 80% -10%, rgb(255 224 27 / 0.1), rgb(255 224 27 / 0) 55%),
+    radial-gradient(95% 50% at -12% 106%, rgb(96 132 255 / 0.11), rgb(96 132 255 / 0) 60%),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
@@ -73,6 +151,7 @@ select,
 textarea {
   background-color: var(--color-surface);
   color: var(--foreground);
+  box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.05);
 }
 input::placeholder,
 textarea::placeholder {

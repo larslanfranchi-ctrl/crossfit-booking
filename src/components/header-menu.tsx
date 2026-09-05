@@ -46,7 +46,7 @@ export function HeaderMenu() {
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-xl border border-stone-200 bg-stone-100 py-2 shadow-lg">
+          <div className="absolute right-0 top-full z-40 mt-2 w-60 rounded-xl border border-stone-200 bg-stone-100 glass py-2">
             {ADMIN_ITEMS.map(({ href, label, Icon }) => (
               <Link
                 key={href}

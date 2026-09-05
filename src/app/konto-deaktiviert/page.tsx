@@ -16,7 +16,7 @@ export default function KontoDeaktiviertPage() {
       <form action={signOut} className="mt-6">
         <button
           type="submit"
-          className="w-full rounded bg-primary-600 px-4 py-2 font-semibold text-black hover:bg-primary-700"
+          className="w-full rounded bg-primary-600 px-4 py-2 font-semibold text-black brand-fill"
         >
           Abmelden
         </button>

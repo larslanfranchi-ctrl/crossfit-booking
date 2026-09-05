@@ -22,7 +22,7 @@ export default function KalenderLoading() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="h-20 rounded-xl border border-stone-200 bg-stone-100"
+            className="h-20 rounded-xl border border-stone-200 bg-stone-100 glass"
           />
         ))}
       </div>
