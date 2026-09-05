@@ -240,7 +240,7 @@ export function KalenderClient({
         <Link
           href={`/kalender?week=${toDateKey(prevWeekStart)}&day=${toDateKey(prevWeekStart)}`}
           className="p-2 text-stone-400 hover:text-stone-600"
-          aria-label="Vorherige Woche"
+          prefetch aria-label="Vorherige Woche"
         >
           ‹
         </Link>
@@ -294,7 +294,7 @@ export function KalenderClient({
         <Link
           href={`/kalender?week=${toDateKey(nextWeekStart)}&day=${toDateKey(nextWeekStart)}`}
           className="p-2 text-stone-400 hover:text-stone-600"
-          aria-label="Nächste Woche"
+          prefetch aria-label="Nächste Woche"
         >
           ›
         </Link>
