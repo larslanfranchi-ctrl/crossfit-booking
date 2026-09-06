@@ -1,0 +1,19 @@
+-- Aufräumen nach RW-3 - NICHT zusammen mit 043 ausführen.
+--
+-- Erst ausführen, wenn die neue Workout-Ansicht (/admin/workouts) im
+-- Produktivbetrieb bestätigt ist und die übernommenen Inhalte stichprobenhaft
+-- geprüft wurden. Danach sind die alten Trainings-Stammdaten unwiederbringlich
+-- weg - vorher ein Backup ziehen (Supabase -> Database -> Backups).
+--
+-- Prüfung vor dem Ausführen: es darf keinen Termin geben, dessen Training
+-- Inhalt hat, der nicht am Slot angekommen ist.
+--
+--   SELECT s.id FROM appointment_slots s
+--   JOIN trainings t ON t.id = s.training_id
+--   WHERE t.content IS NOT NULL AND s.workout_content IS NULL;
+--   -- muss 0 Zeilen liefern
+
+-- Erst die Fremdschlüssel-Spalte, dann die Tabelle (deren Policies aus 031
+-- verschwinden mit ihr).
+ALTER TABLE appointment_slots DROP COLUMN training_id;
+DROP TABLE trainings;

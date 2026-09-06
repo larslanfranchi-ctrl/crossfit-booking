@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { addDays, parseDateKey, startOfWeek } from "@/lib/date-utils";
 import type { UserRole } from "@/types/database";
 
 function composeFullName(
@@ -19,8 +20,7 @@ export type SlotWithParticipants = {
   description: string | null;
   instructorId: string | null;
   instructorName: string | null;
-  trainingId: number | null;
-  trainingName: string | null;
+  workoutContent: string | null;
   participants: { userId: string; fullName: string | null }[];
 };
 
@@ -30,19 +30,12 @@ export type MasterDataItem = {
   is_active: boolean;
 };
 
-export type TrainingItem = {
-  id: number;
-  name: string;
-  content: string | null;
-  is_active: boolean;
-  sort_order: number;
-};
-
 export type AdminUser = {
   id: string;
   fullName: string | null;
   email: string;
-  role: UserRole;
+  /** Seit 042 mehrere Rollen gleichzeitig möglich (z.B. Admin + Kursleitung). */
+  roles: UserRole[];
   isActive: boolean;
 };
 
@@ -57,16 +50,57 @@ export async function getCourseTypes(): Promise<MasterDataItem[]> {
   return data ?? [];
 }
 
-export async function getTrainings(): Promise<TrainingItem[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("trainings")
-    .select("id, name, content, is_active, sort_order")
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
+export type DaySlot = {
+  id: number;
+  start_time: string;
+  end_time: string;
+  courseTypeName: string | null;
+  workoutContent: string | null;
+};
 
-  if (error) throw error;
-  return data ?? [];
+/**
+ * Alle Termine der Woche, in der "dateKey" liegt - für die Workout-Pflege
+ * unter /admin/workouts. Eine Query für die ganze Woche statt einer pro Tag:
+ * die Seite braucht neben den Terminen des gewählten Tages auch die Punkte
+ * unter den übrigen Wochentagen.
+ *
+ * Tagesgrenzen bewusst in lokaler Zeit - der Admin denkt in "Montag", nicht
+ * in UTC-Fenstern; parseDateKey liefert Mitternacht lokal.
+ */
+export async function getSlotsForWeek(dateKey: string): Promise<DaySlot[]> {
+  const date = parseDateKey(dateKey);
+  if (!date) return [];
+
+  const weekStart = startOfWeek(date);
+  const supabase = await createClient();
+
+  const [
+    { data: slots, error: slotsError },
+    { data: courseTypes, error: courseTypesError },
+  ] = await Promise.all([
+    supabase
+      .from("appointment_slots")
+      .select("id, start_time, end_time, course_type_id, workout_content")
+      .gte("start_time", weekStart.toISOString())
+      .lt("start_time", addDays(weekStart, 7).toISOString())
+      .order("start_time", { ascending: true }),
+    supabase.from("course_types").select("id, name"),
+  ]);
+
+  if (slotsError) throw slotsError;
+  if (courseTypesError) throw courseTypesError;
+
+  const courseTypeNameById = new Map(
+    (courseTypes ?? []).map((c) => [c.id, c.name]),
+  );
+
+  return (slots ?? []).map((slot) => ({
+    id: slot.id,
+    start_time: slot.start_time,
+    end_time: slot.end_time,
+    courseTypeName: courseTypeNameById.get(slot.course_type_id) ?? null,
+    workoutContent: slot.workout_content,
+  }));
 }
 
 export type Instructor = {
@@ -76,10 +110,23 @@ export type Instructor = {
 
 export async function getInstructors(): Promise<Instructor[]> {
   const supabase = await createClient();
+
+  // Zwei Schritte statt eines Embeddings: die Rollenzuordnung liegt seit 042
+  // in user_roles, und wer dort die Rolle "instructor" hat, kann daneben
+  // beliebige weitere Rollen tragen.
+  const { data: roleRows, error: rolesError } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "instructor");
+
+  if (rolesError) throw rolesError;
+  const ids = (roleRows ?? []).map((r) => r.user_id);
+  if (ids.length === 0) return [];
+
   const { data, error } = await supabase
     .from("profiles")
     .select("id, first_name, last_name")
-    .eq("role", "instructor")
+    .in("id", ids)
     .order("first_name", { ascending: true });
 
   if (error) throw error;
@@ -99,7 +146,7 @@ export async function getAllUsers(): Promise<AdminUser[]> {
     id: u.id,
     fullName: u.full_name,
     email: u.email,
-    role: u.role,
+    roles: u.roles ?? [],
     isActive: u.is_active,
   }));
 }
@@ -159,7 +206,7 @@ export async function getSlotsWithParticipants(
   let slotsQuery = supabase
     .from("appointment_slots")
     .select(
-      "id, start_time, end_time, capacity, course_type_id, description, instructor_id, training_id, bookings(user_id)",
+      "id, start_time, end_time, capacity, course_type_id, description, instructor_id, workout_content, bookings(user_id)",
     )
     .order("start_time", { ascending: when === "upcoming" });
 
@@ -170,23 +217,17 @@ export async function getSlotsWithParticipants(
   const [
     { data: slots, error: slotsError },
     { data: courseTypes, error: courseTypesError },
-    { data: trainings, error: trainingsError },
   ] = await Promise.all([
     when === "upcoming" ? slotsQuery.gte("start_time", now) : slotsQuery.lt("start_time", now),
     supabase.from("course_types").select("id, name"),
-    supabase.from("trainings").select("id, name"),
   ]);
 
   if (slotsError) throw slotsError;
   if (courseTypesError) throw courseTypesError;
-  if (trainingsError) throw trainingsError;
   if (!slots || slots.length === 0) return [];
 
   const courseTypeNameById = new Map(
     (courseTypes ?? []).map((c) => [c.id, c.name]),
-  );
-  const trainingNameById = new Map(
-    (trainings ?? []).map((t) => [t.id, t.name]),
   );
 
   const instructorIds = slots
@@ -230,10 +271,7 @@ export async function getSlotsWithParticipants(
     instructorName: slot.instructor_id
       ? (nameByUserId.get(slot.instructor_id) ?? null)
       : null,
-    trainingId: slot.training_id,
-    trainingName: slot.training_id
-      ? (trainingNameById.get(slot.training_id) ?? null)
-      : null,
+    workoutContent: slot.workout_content,
     participants: slot.bookings.map((b) => ({
       userId: b.user_id,
       fullName: nameByUserId.get(b.user_id) ?? null,

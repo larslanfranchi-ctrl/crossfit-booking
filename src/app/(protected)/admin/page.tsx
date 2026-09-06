@@ -4,7 +4,6 @@ import {
   getCourseTypes,
   getInstructors,
   getSlotsWithParticipants,
-  getTrainings,
 } from "@/lib/data/admin";
 import {
   copyDay,
@@ -26,17 +25,15 @@ export default async function AdminPage({
 }) {
   const params = await searchParams;
   // Ein Eintrag mehr als angezeigt wird, um zu erkennen, ob weitere existieren.
-  const [fetchedSlots, courseTypes, instructors, trainings] = await Promise.all([
+  const [fetchedSlots, courseTypes, instructors] = await Promise.all([
     getSlotsWithParticipants("upcoming", UPCOMING_SLOTS_LIMIT + 1),
     getCourseTypes(),
     getInstructors(),
-    getTrainings(),
   ]);
   const hasMoreUpcoming = fetchedSlots.length > UPCOMING_SLOTS_LIMIT;
   const slots = fetchedSlots.slice(0, UPCOMING_SLOTS_LIMIT);
 
   const activeCourseTypes = courseTypes.filter((c) => c.is_active);
-  const activeTrainings = trainings.filter((t) => t.is_active);
 
   const editId = params.edit ? Number(params.edit) : null;
   // Bewusst gegen die ungekürzte Liste: ein Termin soll auch dann bearbeitbar
@@ -148,24 +145,6 @@ export default async function AdminPage({
               {instructors.map((i) => (
                 <option key={i.id} value={i.id}>
                   {i.fullName ?? "Unbenannt"}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-span-2 sm:col-span-2">
-            <label htmlFor="trainingId" className="block text-sm font-medium">
-              Training
-            </label>
-            <select
-              id="trainingId"
-              name="trainingId"
-              defaultValue={editSlot?.trainingId ?? ""}
-              className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
-            >
-              <option value="">Kein Training</option>
-              {activeTrainings.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
                 </option>
               ))}
             </select>
@@ -328,26 +307,6 @@ export default async function AdminPage({
             </div>
             <div className="col-span-2 sm:col-span-2">
               <label
-                htmlFor="seriesTrainingId"
-                className="block text-sm font-medium"
-              >
-                Training
-              </label>
-              <select
-                id="seriesTrainingId"
-                name="trainingId"
-                className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
-              >
-                <option value="">Kein Training</option>
-                {activeTrainings.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-span-2 sm:col-span-2">
-              <label
                 htmlFor="seriesDescription"
                 className="block text-sm font-medium"
               >
@@ -404,7 +363,9 @@ export default async function AdminPage({
             </div>
             <p className="col-span-2 text-xs text-stone-500">
               Kopiert alle Termine (Uhrzeit, Kursart, Kapazität) vom Quelltag
-              auf den Zieltag.
+              auf den Zieltag. Das Workout wird nicht mitkopiert - es gehört
+              zum jeweiligen Tag und wird unter &bdquo;Workouts&ldquo;
+              gepflegt.
             </p>
             <div className="col-span-2">
               <button
@@ -492,7 +453,7 @@ export default async function AdminPage({
                   <div className="text-xs text-stone-500">
                     {slot.courseTypeName ?? "Unbekannte Kursart"}
                     {slot.instructorName && <> · {slot.instructorName}</>}
-                    {slot.trainingName && <> · {slot.trainingName}</>} ·{" "}
+                    {slot.workoutContent && <> · Workout</>} ·{" "}
                     {slot.participants.length}/{slot.capacity} belegt
                   </div>
                   {slot.participants.length > 0 && (
@@ -607,7 +568,7 @@ async function PastSlotsSection() {
               <div className="text-xs text-stone-500">
                 {slot.courseTypeName ?? "Unbekannte Kursart"}
                 {slot.instructorName && <> · {slot.instructorName}</>}
-                {slot.trainingName && <> · {slot.trainingName}</>} ·{" "}
+                {slot.workoutContent && <> · Workout</>} ·{" "}
                 {slot.participants.length}/{slot.capacity} belegt
               </div>
             </div>

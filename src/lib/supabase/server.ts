@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { cache } from "react";
-import type { Database } from "@/types/database";
+import type { Database, UserRole } from "@/types/database";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -53,19 +53,36 @@ export const getUser = cache(async () => {
   };
 });
 
-// App-Rolle ("admin" | "instructor" | "user"): bevorzugt aus dem JWT-Claim
-// "user_role" (gesetzt vom Custom Access Token Hook), sonst Fallback auf eine
-// profiles-Query, solange der Hook im Supabase-Dashboard nicht aktiviert ist.
-export const getUserRole = cache(async (): Promise<string | null> => {
+// App-Rollen einer Person - seit 042 mehrere gleichzeitig möglich (z.B.
+// "admin" UND "instructor"). Quelle in dieser Reihenfolge:
+//
+//  1. Claim "user_roles" (Array) aus dem Custom Access Token Hook,
+//  2. Claim "user_role" (Einzelwert) - Tokens, die vor der Umstellung
+//     ausgestellt wurden und erst beim nächsten Refresh das Array bekommen,
+//  3. Query auf user_roles, solange der Hook im Dashboard nicht aktiv ist.
+export const getUserRoles = cache(async (): Promise<UserRole[]> => {
   const claims = await getClaims();
-  if (!claims) return null;
-  if (typeof claims.user_role === "string") return claims.user_role;
+  if (!claims) return [];
+
+  if (Array.isArray(claims.user_roles)) {
+    return claims.user_roles.filter(isUserRole);
+  }
+  if (isUserRole(claims.user_role)) {
+    return [claims.user_role];
+  }
 
   const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data } = await supabase
+    .from("user_roles")
     .select("role")
-    .eq("id", claims.sub)
-    .single();
-  return profile?.role ?? null;
+    .eq("user_id", claims.sub);
+  return (data ?? []).map((r) => r.role).filter(isUserRole);
 });
+
+export async function isAdmin(): Promise<boolean> {
+  return (await getUserRoles()).includes("admin");
+}
+
+function isUserRole(value: unknown): value is UserRole {
+  return value === "admin" || value === "instructor" || value === "user";
+}

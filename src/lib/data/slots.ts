@@ -71,8 +71,7 @@ export type SlotDetail = {
   courseTypeId: number;
   courseTypeName: string | null;
   instructorName: string | null;
-  trainingName: string | null;
-  trainingContent: string | null;
+  workoutContent: string | null;
   participantNames: string[];
 };
 
@@ -90,7 +89,7 @@ export async function getSlotById(id: number): Promise<SlotDetail | null> {
     supabase
       .from("appointment_slots")
       .select(
-        "id, start_time, end_time, capacity, description, course_type_id, training_id",
+        "id, start_time, end_time, capacity, description, course_type_id, workout_content",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -108,20 +107,11 @@ export async function getSlotById(id: number): Promise<SlotDetail | null> {
   if (detailError) throw detailError;
   if (!slot) return null;
 
-  const [{ data: courseType }, { data: training }] = await Promise.all([
-    supabase
-      .from("course_types")
-      .select("name")
-      .eq("id", slot.course_type_id)
-      .maybeSingle(),
-    slot.training_id
-      ? supabase
-          .from("trainings")
-          .select("name, content")
-          .eq("id", slot.training_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
+  const { data: courseType } = await supabase
+    .from("course_types")
+    .select("name")
+    .eq("id", slot.course_type_id)
+    .maybeSingle();
 
   const detail = detailRows?.[0];
   const participantNames = detail?.participant_names ?? [];
@@ -137,8 +127,7 @@ export async function getSlotById(id: number): Promise<SlotDetail | null> {
     courseTypeId: slot.course_type_id,
     courseTypeName: courseType?.name ?? null,
     instructorName: detail?.instructor_name ?? null,
-    trainingName: training?.name ?? null,
-    trainingContent: training?.content ?? null,
+    workoutContent: slot.workout_content,
     participantNames,
   };
 }

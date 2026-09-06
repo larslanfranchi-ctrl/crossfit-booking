@@ -24,13 +24,20 @@ Stories). **Bisher umgesetzt:**
   Passwortwechsel (mit Abfrage des aktuellen Passworts) und Abmelden.
 - Nutzerverwaltung: `/admin/nutzer` zeigt eine kompakte Übersicht mit
   Kennzahlen (gesamt, aktiv, Team, mit gültigem Abo), Volltextsuche über
-  Name/E-Mail und Filtern nach Rolle und Status. Pro Nutzer werden Rolle,
+  Name/E-Mail und Filtern nach Rolle und Status. Pro Nutzer werden Rollen,
   Abo-Zuweisung und Ablaufdatum in einem Speichern-Vorgang gesetzt;
   bestehende Abos lassen sich einzeln entfernen.
-- Nutzer-Import: bestehende Mitglieder können unter `/admin/nutzer` per
-  CSV importiert werden (Spalten `email`, `vorname`, `nachname`, `telefon`,
-  optional `abo` und `abo_bis`). Konten werden ohne Passwort angelegt; die
-  Nutzer setzen es selbst über „Passwort vergessen".
+- Nutzer anlegen: einzeln über das Formular unter `/admin/nutzer` oder per
+  CSV-Import für bestehende Mitglieder (Spalten `email`, `vorname`,
+  `nachname`, `telefon`, optional `abo` und `abo_bis`). Konten werden in
+  beiden Fällen ohne Passwort angelegt; die Nutzer setzen es selbst über
+  „Passwort vergessen".
+- Mehrfachrollen: eine Person kann gleichzeitig Admin und Kursleiter:in
+  sein (Zuordnungstabelle `user_roles`, gesetzt per Checkboxen unter
+  `/admin/nutzer`).
+- Workouts: gepflegt unter `/admin/workouts` entlang des Ablaufs Tag →
+  Kurs → Eingabemaske. Der Text hängt am einzelnen Termin — kein geteilter
+  Vorlagen-Eintrag, ein Workout gilt nur für diesen einen Termin.
 
 **Noch offen:** Warteliste, Zahlungen (Abos kaufen), Admin-Reporting,
 Kurs-Einschränkungen pro Abo (Feld „Enthaltene Kurse" ist reine Anzeige).
@@ -54,9 +61,11 @@ Kurs-Einschränkungen pro Abo (Feld „Enthaltene Kurse" ist reine Anzeige).
    npm run dev
    ```
 
-6. Unter `/register` einen ersten Nutzer anlegen, dann per SQL (siehe
-   `supabase/sql/011_set_first_admin.sql.example`) dessen Rolle auf `admin`
-   setzen, um Zugriff auf `/admin` zu bekommen. Weitere Admins können danach
+6. Unter `/register` einen ersten Nutzer anlegen, dann per SQL dessen
+   Admin-Rolle setzen (`INSERT INTO user_roles (user_id, role) VALUES
+   ('<uuid>', 'admin');`, siehe auch
+   `supabase/sql/011_set_first_admin.sql.example`), um Zugriff auf `/admin`
+   zu bekommen. Weitere Admins können danach
    bequem über `/admin/nutzer` ernannt werden.
 7. Unter `/admin/stammdaten` mindestens eine Kursart und ein Level anlegen,
    bevor unter `/admin` Termine erstellt werden können (beides ist Pflicht
@@ -73,17 +82,20 @@ werden.
 
 - **Admin**: `/admin` (Termine anlegen/bearbeiten/löschen, Einzel- und
   Serientermine), `/admin/stammdaten` (Kursarten/Level verwalten),
-  `/admin/trainings` (Trainingsinhalte), `/admin/abos` (Abo-Angebot
-  pflegen), `/admin/nutzer` (Übersicht mit Suche/Filter: Rollen vergeben,
-  Konten deaktivieren/reaktivieren, Abos zuweisen/entfernen, CSV-Import).
+  `/admin/workouts` (Workouts pro Tag und Kurs), `/admin/abos` (Abo-Angebot
+  pflegen), `/admin/nutzer` (Übersicht mit Suche/Filter: Nutzer anlegen,
+  Rollen vergeben, Konten deaktivieren/reaktivieren, Abos zuweisen/entfernen,
+  CSV-Import).
 - **Benutzer**: `/kalender` (Wochenansicht, Termine buchen/stornieren),
   `/abos` (Abo-Angebot einsehen), `/konto` (Profil-Hub mit eigenem Abo,
   Buchungshistorie, Profildaten und Passwortwechsel).
 
-Rollen werden nicht per Self-Service vergeben - ein neuer Account ist immer
-`user`. Der letzte verbleibende aktive Admin kann weder herabgestuft noch
-deaktiviert werden (serverseitig per DB-Trigger erzwungen, nicht nur in der
-UI).
+Rollen liegen in `user_roles` - eine Person kann mehrere gleichzeitig haben
+(z.B. Admin und Kursleiter:in). `user` ist die Basisrolle, die jedes Konto
+trägt; Zusatzrollen vergeben Admins unter `/admin/nutzer`, nie per
+Self-Service. Der letzte verbleibende aktive Admin kann weder seine
+Admin-Rolle verlieren noch deaktiviert werden (serverseitig per DB-Trigger
+erzwungen, nicht nur in der UI).
 
 Deaktivierte Konten (z.B. bei ausgelaufenem Abo) bleiben inkl.
 Buchungshistorie erhalten: der Nutzer sieht nach dem Login nur noch eine

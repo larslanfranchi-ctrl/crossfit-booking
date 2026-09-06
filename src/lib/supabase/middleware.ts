@@ -78,22 +78,25 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (claims && pathname.startsWith("/admin")) {
-    // Rolle bevorzugt aus dem JWT-Claim "user_role" (Custom Access Token
-    // Hook); Fallback auf die profiles-Query, solange der Hook im
-    // Supabase-Dashboard nicht aktiviert ist.
-    let role: string | null =
-      typeof claims.user_role === "string" ? claims.user_role : null;
+    // Rollen bevorzugt aus dem JWT-Claim "user_roles" (Custom Access Token
+    // Hook, seit 042 ein Array). "user_role" deckt Tokens ab, die noch vor
+    // der Umstellung ausgestellt wurden; die Query auf user_roles greift,
+    // solange der Hook im Supabase-Dashboard nicht aktiviert ist.
+    let isAdmin: boolean;
 
-    if (role === null) {
-      const { data: profile } = await supabase
-        .from("profiles")
+    if (Array.isArray(claims.user_roles)) {
+      isAdmin = claims.user_roles.includes("admin");
+    } else if (typeof claims.user_role === "string") {
+      isAdmin = claims.user_role === "admin";
+    } else {
+      const { data: roles } = await supabase
+        .from("user_roles")
         .select("role")
-        .eq("id", claims.sub)
-        .single();
-      role = profile?.role ?? null;
+        .eq("user_id", claims.sub);
+      isAdmin = (roles ?? []).some((r) => r.role === "admin");
     }
 
-    if (role !== "admin") {
+    if (!isAdmin) {
       const url = request.nextUrl.clone();
       url.pathname = "/home";
       return NextResponse.redirect(url);

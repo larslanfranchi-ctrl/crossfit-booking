@@ -104,15 +104,8 @@ export default async function SlotDetailPage({
     {
       key: "workout",
       label: "Workout",
-      content: slot.trainingContent ? (
-        <div>
-          {slot.trainingName && (
-            <h2 className="mb-2 font-semibold text-stone-500">
-              {slot.trainingName}
-            </h2>
-          )}
-          <RichTextContent html={slot.trainingContent} />
-        </div>
+      content: slot.workoutContent ? (
+        <RichTextContent html={slot.workoutContent} />
       ) : (
         <EmptyHint>
           Für diesen Termin ist noch kein Workout hinterlegt.
@@ -210,7 +203,7 @@ export default async function SlotDetailPage({
       </div>
 
       <h1 className="mt-1.5 text-2xl font-bold tracking-tight">
-        {slot.trainingName ?? slot.courseTypeName ?? "Termin"}
+        {slot.courseTypeName ?? "Termin"}
       </h1>
 
       <div className="mt-5 space-y-3">
@@ -227,7 +220,7 @@ export default async function SlotDetailPage({
       <div className="mt-6 border-t border-stone-200 pt-6">
         <SlotDetailTabs
           tabs={tabs}
-          initialKey={slot.trainingContent ? "workout" : "details"}
+          initialKey={slot.workoutContent ? "workout" : "details"}
         />
       </div>
 

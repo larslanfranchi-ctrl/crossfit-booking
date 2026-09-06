@@ -15,7 +15,7 @@ import {
 const ADMIN_ITEMS = [
   { href: "/admin", label: "Terminverwaltung", Icon: CalendarCog },
   { href: "/admin/stammdaten", label: "Kursangebote", Icon: Tags },
-  { href: "/admin/trainings", label: "Trainings", Icon: Dumbbell },
+  { href: "/admin/workouts", label: "Workouts", Icon: Dumbbell },
   { href: "/admin/abos", label: "Abo-Verwaltung", Icon: CreditCard },
   { href: "/admin/nutzer", label: "Nutzer", Icon: Users },
 ];

@@ -43,6 +43,28 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_roles: {
+        Row: {
+          user_id: string;
+          role: UserRole;
+        };
+        Insert: {
+          user_id: string;
+          role: UserRole;
+        };
+        Update: {
+          role?: UserRole;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       course_types: {
         Row: {
           id: number;
@@ -69,6 +91,7 @@ export type Database = {
           description: string | null;
           instructor_id: string | null;
           training_id: number | null;
+          workout_content: string | null;
           created_by: string | null;
           created_at: string;
         };
@@ -80,6 +103,7 @@ export type Database = {
           description?: string | null;
           instructor_id?: string | null;
           training_id?: number | null;
+          workout_content?: string | null;
           created_by?: string | null;
         };
         Update: {
@@ -90,6 +114,7 @@ export type Database = {
           description?: string | null;
           instructor_id?: string | null;
           training_id?: number | null;
+          workout_content?: string | null;
         };
         Relationships: [];
       };
@@ -233,7 +258,7 @@ export type Database = {
           id: string;
           full_name: string | null;
           email: string;
-          role: UserRole;
+          roles: UserRole[];
           is_active: boolean;
         }[];
       };

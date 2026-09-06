@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient, getUser, getUserRole } from "@/lib/supabase/server";
+import { createClient, getUser, isAdmin } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { addDays, parseDateKey } from "@/lib/date-utils";
+import type { UserRole } from "@/types/database";
 
 function buildAdminUrl(error?: string) {
   if (!error) return "/admin";
@@ -20,6 +21,18 @@ function successUrl(path: string, message: string) {
   return `${path}?message=${encodeURIComponent(message)}`;
 }
 
+// Zurück auf denselben Tag und denselben Kurs, damit nach dem Speichern
+// nicht wieder von vorn ausgewählt werden muss.
+function workoutsUrl(dateKey: string, slotId?: number) {
+  const params = new URLSearchParams();
+  if (dateKey) params.set("datum", dateKey);
+  if (slotId !== undefined && Number.isFinite(slotId)) {
+    params.set("kurs", String(slotId));
+  }
+  const query = params.toString();
+  return query ? `/admin/workouts?${query}` : "/admin/workouts";
+}
+
 function parseSlotForm(formData: FormData) {
   const date = String(formData.get("date") ?? "");
   const startTime = String(formData.get("startTime") ?? "");
@@ -29,8 +42,6 @@ function parseSlotForm(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim() || null;
   const instructorIdRaw = String(formData.get("instructorId") ?? "").trim();
   const instructorId = instructorIdRaw || null;
-  const trainingIdRaw = String(formData.get("trainingId") ?? "").trim();
-  const trainingId = trainingIdRaw ? Number(trainingIdRaw) : null;
 
   const startDate = new Date(`${date}T${startTime}:00`);
   const endDate = new Date(`${date}T${endTime}:00`);
@@ -50,7 +61,6 @@ function parseSlotForm(formData: FormData) {
     courseTypeId,
     description,
     instructorId,
-    trainingId,
     isValid,
   };
 }
@@ -70,7 +80,6 @@ export async function createSlot(formData: FormData) {
     courseTypeId,
     description,
     instructorId,
-    trainingId,
     isValid,
   } = parseSlotForm(formData);
 
@@ -89,7 +98,6 @@ export async function createSlot(formData: FormData) {
     course_type_id: courseTypeId,
     description,
     instructor_id: instructorId,
-    training_id: trainingId,
     created_by: user.id,
   });
 
@@ -114,7 +122,6 @@ export async function updateSlot(formData: FormData) {
     courseTypeId,
     description,
     instructorId,
-    trainingId,
     isValid,
   } = parseSlotForm(formData);
 
@@ -152,7 +159,6 @@ export async function updateSlot(formData: FormData) {
       course_type_id: courseTypeId,
       description,
       instructor_id: instructorId,
-      training_id: trainingId,
     })
     .eq("id", slotId);
 
@@ -183,8 +189,6 @@ export async function createRecurringSlots(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim() || null;
   const instructorIdRaw = String(formData.get("instructorId") ?? "").trim();
   const instructorId = instructorIdRaw || null;
-  const trainingIdRaw = String(formData.get("trainingId") ?? "").trim();
-  const trainingId = trainingIdRaw ? Number(trainingIdRaw) : null;
 
   const firstStart = new Date(`${startDateStr}T${startTime}:00`);
   const firstEnd = new Date(`${startDateStr}T${endTime}:00`);
@@ -218,7 +222,6 @@ export async function createRecurringSlots(formData: FormData) {
       course_type_id: courseTypeId,
       description,
       instructor_id: instructorId,
-      training_id: trainingId,
       created_by: user.id,
     };
   });
@@ -296,7 +299,7 @@ export async function copyDay(formData: FormData) {
   const { data: sourceSlots, error: fetchError } = await supabase
     .from("appointment_slots")
     .select(
-      "start_time, end_time, capacity, course_type_id, description, instructor_id, training_id",
+      "start_time, end_time, capacity, course_type_id, description, instructor_id",
     )
     .gte("start_time", sourceDate.toISOString())
     .lt("start_time", addDays(sourceDate, 1).toISOString());
@@ -325,7 +328,6 @@ export async function copyDay(formData: FormData) {
     course_type_id: slot.course_type_id,
     description: slot.description,
     instructor_id: slot.instructor_id,
-    training_id: slot.training_id,
     created_by: user.id,
   }));
 
@@ -411,158 +413,38 @@ export async function deleteCourseType(formData: FormData) {
   redirect(successUrl("/admin/stammdaten", "Kursart gelöscht."));
 }
 
-export async function createTraining(formData: FormData) {
-  const name = String(formData.get("name") ?? "").trim();
-  const content = String(formData.get("content") ?? "").trim() || null;
+// Workout eines Termins speichern (RW-3). Gepflegt wird es unter
+// /admin/workouts: Tag öffnen, Kurs im Dropdown wählen, Text schreiben - der
+// Inhalt hängt am Termin, nicht mehr an einer separaten Trainings-Liste.
+export async function saveWorkout(formData: FormData) {
+  const slotId = Number(formData.get("slotId"));
+  const dateKey = String(formData.get("dateKey") ?? "");
+  const content = String(formData.get("workoutContent") ?? "").trim() || null;
+  const backUrl = workoutsUrl(dateKey, slotId);
+
+  if (!Number.isFinite(slotId)) {
+    redirect(buildUrl(backUrl, "Kein Termin ausgewählt."));
+  }
+
   const supabase = await createClient();
-
-  if (!name) {
-    redirect(buildUrl("/admin/trainings", "Name darf nicht leer sein."));
-  }
-
-  // Neues Training ans Ende der manuellen Reihenfolge hängen.
-  const { data: last, error: lastError } = await supabase
-    .from("trainings")
-    .select("sort_order")
-    .order("sort_order", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (lastError) {
-    redirect(buildUrl("/admin/trainings", lastError.message));
-  }
-
-  const nextSortOrder = (last?.sort_order ?? 0) + 1;
-
   const { error } = await supabase
-    .from("trainings")
-    .insert({ name, content, sort_order: nextSortOrder });
+    .from("appointment_slots")
+    .update({ workout_content: content })
+    .eq("id", slotId);
 
   if (error) {
-    redirect(buildUrl("/admin/trainings", error.message));
+    redirect(buildUrl(backUrl, error.message));
   }
 
-  revalidatePath("/admin/trainings");
-  redirect(successUrl("/admin/trainings", "Training angelegt."));
-}
-
-export async function moveTraining(formData: FormData) {
-  const id = Number(formData.get("id"));
-  const direction = String(formData.get("direction") ?? "");
-  const supabase = await createClient();
-
-  if (!Number.isFinite(id) || (direction !== "up" && direction !== "down")) {
-    redirect(buildUrl("/admin/trainings", "Ungültige Eingabe."));
-  }
-
-  const { data: trainings, error: listError } = await supabase
-    .from("trainings")
-    .select("id, sort_order")
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
-
-  if (listError) {
-    redirect(buildUrl("/admin/trainings", listError.message));
-  }
-
-  const list = trainings ?? [];
-  const index = list.findIndex((t) => t.id === id);
-  const neighborIndex = direction === "up" ? index - 1 : index + 1;
-
-  // Am Rand (schon ganz oben/unten) oder Training nicht gefunden: nichts tun.
-  if (index === -1 || neighborIndex < 0 || neighborIndex >= list.length) {
-    redirect("/admin/trainings");
-  }
-
-  const current = list[index];
-  const neighbor = list[neighborIndex];
-
-  // sort_order der beiden Nachbarn tauschen.
-  const [{ error: e1 }, { error: e2 }] = await Promise.all([
-    supabase
-      .from("trainings")
-      .update({ sort_order: neighbor.sort_order })
-      .eq("id", current.id),
-    supabase
-      .from("trainings")
-      .update({ sort_order: current.sort_order })
-      .eq("id", neighbor.id),
-  ]);
-
-  if (e1 || e2) {
-    redirect(buildUrl("/admin/trainings", (e1 ?? e2)!.message));
-  }
-
-  revalidatePath("/admin/trainings");
-  redirect("/admin/trainings");
-}
-
-export async function updateTraining(formData: FormData) {
-  const id = Number(formData.get("id"));
-  const name = String(formData.get("name") ?? "").trim();
-  const content = String(formData.get("content") ?? "").trim() || null;
-  const supabase = await createClient();
-
-  if (!name) {
-    redirect(buildUrl("/admin/trainings", "Name darf nicht leer sein."));
-  }
-
-  const { error } = await supabase
-    .from("trainings")
-    .update({ name, content })
-    .eq("id", id);
-
-  if (error) {
-    redirect(buildUrl("/admin/trainings", error.message));
-  }
-
-  revalidatePath("/admin/trainings");
-  revalidatePath("/admin");
+  revalidatePath("/admin/workouts");
   revalidatePath("/kalender");
-  redirect(successUrl("/admin/trainings", "Training gespeichert."));
-}
-
-export async function toggleTraining(formData: FormData) {
-  const id = Number(formData.get("id"));
-  const newActive = formData.get("newActive") === "true";
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("trainings")
-    .update({ is_active: newActive })
-    .eq("id", id);
-
-  if (error) {
-    redirect(buildUrl("/admin/trainings", error.message));
-  }
-
-  revalidatePath("/admin/trainings");
-  revalidatePath("/admin");
+  revalidatePath(`/kalender/${slotId}`);
   redirect(
     successUrl(
-      "/admin/trainings",
-      newActive ? "Training aktiviert." : "Training deaktiviert.",
+      backUrl,
+      content ? "Workout gespeichert." : "Workout geleert.",
     ),
   );
-}
-
-export async function deleteTraining(formData: FormData) {
-  const id = Number(formData.get("id"));
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("trainings").delete().eq("id", id);
-
-  if (error) {
-    const message =
-      error.code === "23503"
-        ? "Dieses Training wird noch von bestehenden Terminen verwendet und kann nicht gelöscht werden. Du kannst es stattdessen deaktivieren."
-        : error.message;
-    redirect(buildUrl("/admin/trainings", message));
-  }
-
-  revalidatePath("/admin/trainings");
-  revalidatePath("/admin");
-  redirect(successUrl("/admin/trainings", "Training gelöscht."));
 }
 
 function parseMembershipForm(formData: FormData) {
@@ -781,34 +663,31 @@ export async function assignMembership(formData: FormData) {
   redirect(successUrl("/admin/nutzer", "Abo zugewiesen."));
 }
 
-// Kombinierte Einstellung pro Nutzer: Rolle setzen und optional gleich ein Abo
-// (mit Ablaufdatum) zuweisen — alles mit einem "Speichern". Das Entfernen
+// Kombinierte Einstellung pro Nutzer: Rollen setzen und optional gleich ein
+// Abo (mit Ablaufdatum) zuweisen — alles mit einem "Speichern". Das Entfernen
 // bestehender Abos läuft weiterhin über removeUserMembership.
 export async function updateUserSettings(formData: FormData) {
   const userId = String(formData.get("userId") ?? "");
-  const newRole = String(formData.get("newRole") ?? "");
   const membershipIdRaw = String(formData.get("membershipId") ?? "").trim();
   const endsOn = String(formData.get("endsOn") ?? "").trim() || null;
 
   if (!userId) {
     redirect(buildUrl("/admin/nutzer", "Kein Nutzer angegeben."));
   }
-  if (newRole !== "admin" && newRole !== "instructor" && newRole !== "user") {
+
+  const roles = parseRoles(formData);
+  if (!roles) {
     redirect(buildUrl("/admin/nutzer", "Ungültige Rolle."));
   }
 
   const supabase = await createClient();
-
-  const { error: roleError } = await supabase
-    .from("profiles")
-    .update({ role: newRole })
-    .eq("id", userId);
+  const roleError = await applyUserRoles(supabase, userId, roles);
 
   if (roleError) {
-    redirect(buildUrl("/admin/nutzer", roleError.message));
+    redirect(buildUrl("/admin/nutzer", roleError));
   }
 
-  const messages = ["Rolle gespeichert"];
+  const messages = ["Rollen gespeichert"];
 
   if (membershipIdRaw) {
     const { error: aboError } = await supabase.from("user_memberships").insert({
@@ -827,6 +706,66 @@ export async function updateUserSettings(formData: FormData) {
   revalidatePath("/konto");
   revalidatePath("/", "layout");
   redirect(successUrl("/admin/nutzer", `${messages.join(" · ")}.`));
+}
+
+// Die Checkboxen im Formular liefern nur die Zusatzrollen; "user" trägt
+// jede Person als Basisrolle, damit niemand ganz ohne Rolle zurückbleibt.
+function parseRoles(formData: FormData): UserRole[] | null {
+  const selected = formData.getAll("roles").map(String);
+
+  if (selected.some((r) => r !== "admin" && r !== "instructor" && r !== "user")) {
+    return null;
+  }
+
+  const roles = new Set<UserRole>(selected as UserRole[]);
+  roles.add("user");
+  return Array.from(roles);
+}
+
+/**
+ * Rollen einer Person auf die übergebene Menge bringen. Nur die Differenz
+ * wird geschrieben - ein Delete-all-dann-Insert würde den Trigger für den
+ * letzten Admin (042) auch dann auslösen, wenn die Admin-Rolle am Ende
+ * erhalten bleibt.
+ *
+ * Gibt eine Fehlermeldung zurück oder null bei Erfolg.
+ */
+async function applyUserRoles(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  roles: UserRole[],
+): Promise<string | null> {
+  const { data: existing, error: readError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+
+  if (readError) return readError.message;
+
+  const current = new Set((existing ?? []).map((r) => r.role));
+  const target = new Set(roles);
+  const toAdd = roles.filter((r) => !current.has(r));
+  const toRemove = Array.from(current).filter((r) => !target.has(r));
+
+  if (toAdd.length > 0) {
+    const { error } = await supabase
+      .from("user_roles")
+      .insert(toAdd.map((role) => ({ user_id: userId, role })));
+    if (error) return error.message;
+  }
+
+  if (toRemove.length > 0) {
+    const { error } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .in("role", toRemove);
+    // Der Aussperrschutz aus 042 meldet sich hier als DB-Fehler; die
+    // Meldung ist bereits auf Deutsch und für Admins verständlich.
+    if (error) return error.message;
+  }
+
+  return null;
 }
 
 export async function removeUserMembership(formData: FormData) {
@@ -926,6 +865,92 @@ function parseImportDate(value: string): string | null | undefined {
   return undefined;
 }
 
+type ProvisionInput = {
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  /** Zusatzrollen; "user" setzt der Signup-Trigger (042) selbst. */
+  roles: UserRole[];
+  membershipId: number | null;
+  endsOn: string | null;
+};
+
+type ProvisionResult =
+  | { status: "created"; userId: string; warnings: string[] }
+  | { status: "exists" }
+  | { status: "error"; message: string };
+
+/**
+ * Legt ein Konto ohne Passwort an (E-Mail gilt als bestätigt, das Passwort
+ * setzen die Nutzer:innen selbst über "Passwort vergessen") und trägt
+ * Telefon, Rollen und Abo nach. Gemeinsame Logik von CSV-Import und
+ * manueller Anlage - beide sollen dieselben Regeln und Fehlermeldungen
+ * haben.
+ *
+ * Warnungen sind Teilfehler NACH dem Anlegen des Kontos: das Konto existiert
+ * dann, nur ein Zusatzfeld fehlt. Es wird bewusst nicht zurückgerollt -
+ * nachtragen ist in der Nutzerverwaltung möglich, ein verwaistes Auth-Konto
+ * ohne Profil wäre der schlechtere Zustand.
+ */
+async function provisionUser(
+  admin: ReturnType<typeof createAdminClient>,
+  input: ProvisionInput,
+): Promise<ProvisionResult> {
+  const { data: createdUser, error: createError } =
+    await admin.auth.admin.createUser({
+      email: input.email,
+      email_confirm: true,
+      user_metadata: {
+        first_name: input.firstName,
+        last_name: input.lastName,
+      },
+    });
+
+  if (createError) {
+    if (createError.code === "email_exists") return { status: "exists" };
+    return { status: "error", message: createError.message };
+  }
+
+  const userId = createdUser.user.id;
+  const warnings: string[] = [];
+
+  // Profil und Basisrolle hat der Signup-Trigger (026/042) bereits angelegt -
+  // nur noch die Felder nachtragen, die er nicht kennt.
+  if (input.phone) {
+    const { error } = await admin
+      .from("profiles")
+      .update({ phone: input.phone })
+      .eq("id", userId);
+    if (error) {
+      warnings.push(`Telefon konnte nicht gespeichert werden (${error.message})`);
+    }
+  }
+
+  const extraRoles = input.roles.filter((r) => r !== "user");
+  if (extraRoles.length > 0) {
+    const { error } = await admin
+      .from("user_roles")
+      .insert(extraRoles.map((role) => ({ user_id: userId, role })));
+    if (error) {
+      warnings.push(`Rollen konnten nicht gesetzt werden (${error.message})`);
+    }
+  }
+
+  if (input.membershipId !== null) {
+    const { error } = await admin.from("user_memberships").insert({
+      user_id: userId,
+      membership_id: input.membershipId,
+      ends_on: input.endsOn,
+    });
+    if (error) {
+      warnings.push(`Abo konnte nicht zugewiesen werden (${error.message})`);
+    }
+  }
+
+  return { status: "created", userId, warnings };
+}
+
 // Nutzer-Import für die Migration bestehender Mitglieder: legt pro
 // CSV-Zeile ein Auth-Konto ohne Passwort an (E-Mail gilt als bestätigt,
 // Passwort setzen die Nutzer selbst über "Passwort vergessen") und weist
@@ -934,7 +959,7 @@ function parseImportDate(value: string): string | null | undefined {
 export async function importUsers(formData: FormData) {
   // Der Service-Role-Client umgeht RLS - die Admin-Prüfung MUSS deshalb
   // hier im Code passieren.
-  if ((await getUserRole()) !== "admin") {
+  if (!(await isAdmin())) {
     redirect(buildUrl("/admin/nutzer", "Nur Admins dürfen Nutzer importieren."));
   }
 
@@ -1031,55 +1056,28 @@ export async function importUsers(formData: FormData) {
       continue;
     }
 
-    const { data: createdUser, error: createError } =
-      await admin.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: {
-          first_name: value(firstNameIdx) || null,
-          last_name: value(lastNameIdx) || null,
-        },
-      });
+    const result = await provisionUser(admin, {
+      email,
+      firstName: value(firstNameIdx) || null,
+      lastName: value(lastNameIdx) || null,
+      phone: value(phoneIdx) || null,
+      roles: [],
+      membershipId: membershipId ?? null,
+      endsOn,
+    });
 
-    if (createError) {
-      if (createError.code === "email_exists") {
-        skipped++;
-      } else {
-        errors.push(`Zeile ${rowNo}: ${createError.message}`);
-      }
+    if (result.status === "exists") {
+      skipped++;
+      continue;
+    }
+    if (result.status === "error") {
+      errors.push(`Zeile ${rowNo}: ${result.message}`);
       continue;
     }
 
-    const userId = createdUser.user.id;
-
-    // Das Profil hat der Signup-Trigger (026) bereits angelegt - nur noch
-    // die Felder nachtragen, die er nicht kennt.
-    const phone = value(phoneIdx);
-    if (phone) {
-      const { error: phoneError } = await admin
-        .from("profiles")
-        .update({ phone })
-        .eq("id", userId);
-      if (phoneError) {
-        errors.push(
-          `Zeile ${rowNo}: Telefon konnte nicht gespeichert werden (${phoneError.message})`,
-        );
-      }
+    for (const warning of result.warnings) {
+      errors.push(`Zeile ${rowNo}: ${warning}`);
     }
-
-    if (membershipId !== undefined) {
-      const { error: aboError } = await admin.from("user_memberships").insert({
-        user_id: userId,
-        membership_id: membershipId,
-        ends_on: endsOn,
-      });
-      if (aboError) {
-        errors.push(
-          `Zeile ${rowNo}: Abo konnte nicht zugewiesen werden (${aboError.message})`,
-        );
-      }
-    }
-
     created++;
   }
 
@@ -1104,32 +1102,78 @@ export async function importUsers(formData: FormData) {
   );
 }
 
-export async function setUserRole(formData: FormData) {
-  const userId = String(formData.get("userId") ?? "");
-  const newRole = String(formData.get("newRole") ?? "");
-  const supabase = await createClient();
+// Einzelne Person direkt in der App anlegen (RW-1) - ohne Umweg über eine
+// Ein-Zeilen-CSV. Läuft wie der Import über den Service-Role-Client, weil die
+// Auth-Admin-API mit dem Anon-Key nicht erreichbar ist.
+export async function createUser(formData: FormData) {
+  // Der Service-Role-Client umgeht RLS - die Admin-Prüfung MUSS deshalb
+  // hier im Code passieren.
+  if (!(await isAdmin())) {
+    redirect(buildUrl("/admin/nutzer", "Nur Admins dürfen Nutzer anlegen."));
+  }
 
-  if (newRole !== "admin" && newRole !== "instructor" && newRole !== "user") {
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const firstName = String(formData.get("firstName") ?? "").trim() || null;
+  const lastName = String(formData.get("lastName") ?? "").trim() || null;
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const membershipIdRaw = String(formData.get("membershipId") ?? "").trim();
+  const endsOn = String(formData.get("endsOn") ?? "").trim() || null;
+
+  if (!email.includes("@")) {
+    redirect(buildUrl("/admin/nutzer", "Bitte eine gültige E-Mail-Adresse angeben."));
+  }
+
+  const roles = parseRoles(formData);
+  if (!roles) {
     redirect(buildUrl("/admin/nutzer", "Ungültige Rolle."));
   }
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({ role: newRole })
-    .eq("id", userId);
-
-  if (error) {
-    redirect(buildUrl("/admin/nutzer", error.message));
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    redirect(
+      buildUrl(
+        "/admin/nutzer",
+        e instanceof Error ? e.message : "Anlegen ist nicht konfiguriert.",
+      ),
+    );
   }
 
-  const roleLabel =
-    newRole === "admin"
-      ? "Admin"
-      : newRole === "instructor"
-        ? "Kursleiter:in"
-        : "Nutzer:in";
+  const result = await provisionUser(admin, {
+    email,
+    firstName,
+    lastName,
+    phone,
+    roles,
+    membershipId: membershipIdRaw ? Number(membershipIdRaw) : null,
+    endsOn,
+  });
+
+  if (result.status === "exists") {
+    redirect(
+      buildUrl(
+        "/admin/nutzer",
+        `Es gibt bereits ein Konto mit der E-Mail-Adresse ${email}.`,
+      ),
+    );
+  }
+  if (result.status === "error") {
+    redirect(buildUrl("/admin/nutzer", result.message));
+  }
 
   revalidatePath("/admin/nutzer");
-  revalidatePath("/", "layout");
-  redirect(successUrl("/admin/nutzer", `Rolle auf ${roleLabel} geändert.`));
+
+  const message =
+    result.warnings.length > 0
+      ? `Nutzer:in angelegt, aber: ${result.warnings.join(" | ")}`
+      : `${email} angelegt. Das Passwort setzt die Person selbst über "Passwort vergessen".`;
+
+  redirect(
+    result.warnings.length > 0
+      ? buildUrl("/admin/nutzer", message)
+      : successUrl("/admin/nutzer", message),
+  );
 }

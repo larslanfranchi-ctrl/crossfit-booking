@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { getUserRole } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/bottom-nav";
 import { HeaderMenu } from "@/components/header-menu";
 import { InstallPrompt } from "@/components/install-prompt";
@@ -9,7 +9,7 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const isAdmin = (await getUserRole()) === "admin";
+  const showAdminMenu = await isAdmin();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -28,7 +28,7 @@ export default async function ProtectedLayout({
               Lionsoul Performance
             </span>
           </span>
-          {isAdmin && <HeaderMenu />}
+          {showAdminMenu && <HeaderMenu />}
         </nav>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8 pb-28">

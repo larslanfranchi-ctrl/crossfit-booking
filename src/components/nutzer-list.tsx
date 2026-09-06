@@ -18,8 +18,19 @@ const ROLE_BADGE_STYLES: Record<UserRole, string> = {
   user: "bg-stone-200 text-stone-500",
 };
 
+// Zusatzrollen, die vergeben werden können - "user" trägt jede Person
+// ohnehin als Basisrolle und wird deshalb nicht angeboten.
+const EXTRA_ROLES: UserRole[] = ["instructor", "admin"];
+
 type RoleFilter = "all" | UserRole;
 type StatusFilter = "all" | "active" | "inactive";
+
+// In der Kopfzeile zählen die Zusatzrollen; wer nur die Basisrolle hat,
+// bekommt weiterhin ein einzelnes "Nutzer"-Badge.
+function displayRoles(roles: UserRole[]): UserRole[] {
+  const extra = EXTRA_ROLES.filter((r) => roles.includes(r));
+  return extra.length > 0 ? extra : ["user"];
+}
 
 function formatDateDe(iso: string): string {
   return new Date(iso).toLocaleDateString("de-DE", {
@@ -74,7 +85,9 @@ export function NutzerList({
 
   const stats = useMemo(() => {
     const active = users.filter((u) => u.isActive).length;
-    const team = users.filter((u) => u.role !== "user").length;
+    const team = users.filter((u) =>
+      u.roles.some((r) => r !== "user"),
+    ).length;
     const withAbo = users.filter((u) =>
       (abosByUser.get(u.id) ?? []).some((a) => !a.endsOn || a.endsOn >= today),
     ).length;
@@ -84,7 +97,7 @@ export function NutzerList({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
-      if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (roleFilter !== "all" && !u.roles.includes(roleFilter)) return false;
       if (statusFilter === "active" && !u.isActive) return false;
       if (statusFilter === "inactive" && u.isActive) return false;
       if (q) {
@@ -202,10 +215,15 @@ export function NutzerList({
                   </div>
                 </div>
 
-                <span
-                  className={`hidden shrink-0 rounded px-2 py-0.5 text-xs sm:inline ${ROLE_BADGE_STYLES[u.role]}`}
-                >
-                  {ROLE_LABELS[u.role]}
+                <span className="hidden shrink-0 items-center gap-1 sm:flex">
+                  {displayRoles(u.roles).map((role) => (
+                    <span
+                      key={role}
+                      className={`rounded px-2 py-0.5 text-xs ${ROLE_BADGE_STYLES[role]}`}
+                    >
+                      {ROLE_LABELS[role]}
+                    </span>
+                  ))}
                 </span>
 
                 <span className="hidden max-w-[13rem] shrink-0 truncate text-xs text-stone-400 md:inline">
@@ -263,18 +281,28 @@ export function NutzerList({
                     className="flex flex-wrap items-end gap-3 rounded-lg border border-stone-200 bg-stone-100 glass p-3"
                   >
                     <input type="hidden" name="userId" value={u.id} />
-                    <label className="flex flex-col gap-1 text-xs text-stone-400">
-                      Rolle
-                      <select
-                        name="newRole"
-                        defaultValue={u.role}
-                        className="rounded border border-stone-300 px-2 py-1.5 text-sm text-stone-800"
-                      >
-                        <option value="user">Nutzer</option>
-                        <option value="instructor">Kursleiter:in</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </label>
+                    <fieldset className="flex flex-col gap-1 text-xs text-stone-400">
+                      <legend className="mb-1">Rollen</legend>
+                      <div className="flex flex-wrap gap-3">
+                        {EXTRA_ROLES.map((role) => (
+                          <label
+                            key={role}
+                            className="flex items-center gap-1.5 text-sm text-stone-800"
+                          >
+                            <input
+                              type="checkbox"
+                              name="roles"
+                              value={role}
+                              defaultChecked={u.roles.includes(role)}
+                            />
+                            {ROLE_LABELS[role]}
+                          </label>
+                        ))}
+                      </div>
+                      <span className="text-xs text-stone-400">
+                        Ohne Häkchen bleibt nur die Basisrolle Nutzer.
+                      </span>
+                    </fieldset>
                     <label className="flex flex-col gap-1 text-xs text-stone-400">
                       Abo zuweisen (optional)
                       <select
