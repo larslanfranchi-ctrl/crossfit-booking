@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, getUser, isAdmin } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { addDays, parseDateKey } from "@/lib/date-utils";
+import {
+  addDays,
+  boxWallTimeToDate,
+  formatTime,
+  parseDateKey,
+  toDateKey,
+} from "@/lib/date-utils";
 import type { UserRole } from "@/types/database";
 
 function buildAdminUrl(error?: string) {
@@ -43,8 +49,10 @@ function parseSlotForm(formData: FormData) {
   const instructorIdRaw = String(formData.get("instructorId") ?? "").trim();
   const instructorId = instructorIdRaw || null;
 
-  const startDate = new Date(`${date}T${startTime}:00`);
-  const endDate = new Date(`${date}T${endTime}:00`);
+  // Eingabe ist Ortszeit in der Box. new Date("...T17:00:00") wuerde sie in
+  // der Zeitzone der Laufzeitumgebung deuten - auf Vercel also als UTC.
+  const startDate = boxWallTimeToDate(date, startTime);
+  const endDate = boxWallTimeToDate(date, endTime);
 
   const isValid =
     !Number.isNaN(startDate.getTime()) &&
@@ -190,8 +198,9 @@ export async function createRecurringSlots(formData: FormData) {
   const instructorIdRaw = String(formData.get("instructorId") ?? "").trim();
   const instructorId = instructorIdRaw || null;
 
-  const firstStart = new Date(`${startDateStr}T${startTime}:00`);
-  const firstEnd = new Date(`${startDateStr}T${endTime}:00`);
+  const firstStart = boxWallTimeToDate(startDateStr, startTime);
+  const firstEnd = boxWallTimeToDate(startDateStr, endTime);
+  const firstDay = parseDateKey(startDateStr);
 
   const isValid =
     !Number.isNaN(firstStart.getTime()) &&
@@ -199,6 +208,7 @@ export async function createRecurringSlots(formData: FormData) {
     firstEnd > firstStart &&
     Number.isFinite(capacity) &&
     capacity >= 1 &&
+    firstDay !== null &&
     Number.isFinite(courseTypeId) &&
     Number.isInteger(occurrences) &&
     occurrences >= 1 &&
@@ -212,9 +222,13 @@ export async function createRecurringSlots(formData: FormData) {
     );
   }
 
+  // Bewusst ueber den Tagesschluessel statt ueber "+ 7*24h": ueber die
+  // Zeitumstellung hinweg soll die Uhrzeit in der Box gleich bleiben
+  // (19:00 bleibt 19:00), nicht der Abstand in Stunden.
   const rows = Array.from({ length: occurrences }, (_, i) => {
-    const start = addDays(firstStart, i * 7);
-    const end = addDays(firstEnd, i * 7);
+    const dayKey = toDateKey(addDays(firstDay!, i * 7));
+    const start = boxWallTimeToDate(dayKey, startTime);
+    const end = boxWallTimeToDate(dayKey, endTime);
     return {
       start_time: start.toISOString(),
       end_time: end.toISOString(),
@@ -296,13 +310,20 @@ export async function copyDay(formData: FormData) {
     redirect(buildAdminUrl("Ungültiges Quell- oder Zieldatum."));
   }
 
+  // Tagesgrenzen in Box-Ortszeit, nicht in der Zeitzone der Laufzeit.
+  const dayStart = boxWallTimeToDate(sourceDateStr, "00:00");
+  const nextDayStart = boxWallTimeToDate(
+    toDateKey(addDays(sourceDate, 1)),
+    "00:00",
+  );
+
   const { data: sourceSlots, error: fetchError } = await supabase
     .from("appointment_slots")
     .select(
       "start_time, end_time, capacity, course_type_id, description, instructor_id",
     )
-    .gte("start_time", sourceDate.toISOString())
-    .lt("start_time", addDays(sourceDate, 1).toISOString());
+    .gte("start_time", dayStart.toISOString())
+    .lt("start_time", nextDayStart.toISOString());
 
   if (fetchError) {
     redirect(buildAdminUrl(fetchError.message));
@@ -312,24 +333,30 @@ export async function copyDay(formData: FormData) {
     redirect(buildAdminUrl("Am Quelltag wurden keine Termine gefunden."));
   }
 
-  // Zeitverschiebung in Millisekunden zwischen Quell- und Zieltag - auf beide
-  // Uhrzeiten jedes Slots angewendet, damit die Tageszeit (z.B. 9:00) gleich
-  // bleibt und nur das Datum verschoben wird.
-  const dayOffsetMs = targetDate.getTime() - sourceDate.getTime();
+  // Uhrzeit des Quelltermins in Box-Ortszeit lesen und am Zieltag wieder
+  // aufbauen. Eine reine Millisekunden-Verschiebung wuerde ueber die
+  // Zeitumstellung hinweg alle Termine um eine Stunde verrutschen lassen.
+  const rows = sourceSlots.map((slot) => {
+    const start = boxWallTimeToDate(targetDateStr, formatTime(slot.start_time));
+    let end = boxWallTimeToDate(targetDateStr, formatTime(slot.end_time));
+    // Termin über Mitternacht: das Ende gehört auf den Folgetag.
+    if (end <= start) {
+      end = boxWallTimeToDate(
+        toDateKey(addDays(targetDate, 1)),
+        formatTime(slot.end_time),
+      );
+    }
 
-  const rows = sourceSlots.map((slot) => ({
-    start_time: new Date(
-      new Date(slot.start_time).getTime() + dayOffsetMs,
-    ).toISOString(),
-    end_time: new Date(
-      new Date(slot.end_time).getTime() + dayOffsetMs,
-    ).toISOString(),
-    capacity: slot.capacity,
-    course_type_id: slot.course_type_id,
-    description: slot.description,
-    instructor_id: slot.instructor_id,
-    created_by: user.id,
-  }));
+    return {
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      capacity: slot.capacity,
+      course_type_id: slot.course_type_id,
+      description: slot.description,
+      instructor_id: slot.instructor_id,
+      created_by: user.id,
+    };
+  });
 
   const { error: insertError } = await supabase
     .from("appointment_slots")

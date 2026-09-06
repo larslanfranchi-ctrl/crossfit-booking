@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { addDays, parseDateKey, startOfWeek } from "@/lib/date-utils";
+import {
+  addDays,
+  boxWallTimeToDate,
+  parseDateKey,
+  startOfWeek,
+  toDateKey,
+} from "@/lib/date-utils";
 import type { UserRole } from "@/types/database";
 
 function composeFullName(
@@ -71,7 +77,14 @@ export async function getSlotsForWeek(dateKey: string): Promise<DaySlot[]> {
   const date = parseDateKey(dateKey);
   if (!date) return [];
 
-  const weekStart = startOfWeek(date);
+  // Wochenfenster in Box-Ortszeit: auf einem UTC-Server läge die lokale
+  // Mitternacht sonst zwei Stunden neben dem Tagesbeginn in der Box.
+  const weekStartKey = toDateKey(startOfWeek(date));
+  const weekStart = boxWallTimeToDate(weekStartKey, "00:00");
+  const weekEnd = boxWallTimeToDate(
+    toDateKey(addDays(startOfWeek(date), 7)),
+    "00:00",
+  );
   const supabase = await createClient();
 
   const [
@@ -82,7 +95,7 @@ export async function getSlotsForWeek(dateKey: string): Promise<DaySlot[]> {
       .from("appointment_slots")
       .select("id, start_time, end_time, course_type_id, workout_content")
       .gte("start_time", weekStart.toISOString())
-      .lt("start_time", addDays(weekStart, 7).toISOString())
+      .lt("start_time", weekEnd.toISOString())
       .order("start_time", { ascending: true }),
     supabase.from("course_types").select("id, name"),
   ]);
