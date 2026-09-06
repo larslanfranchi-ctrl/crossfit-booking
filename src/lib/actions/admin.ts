@@ -27,13 +27,13 @@ function successUrl(path: string, message: string) {
   return `${path}?message=${encodeURIComponent(message)}`;
 }
 
-// Zurück auf denselben Tag und denselben Kurs, damit nach dem Speichern
+// Zurück auf denselben Tag und dieselbe Kursart, damit nach dem Speichern
 // nicht wieder von vorn ausgewählt werden muss.
-function workoutsUrl(dateKey: string, slotId?: number) {
+function workoutsUrl(dateKey: string, courseTypeId?: number) {
   const params = new URLSearchParams();
   if (dateKey) params.set("datum", dateKey);
-  if (slotId !== undefined && Number.isFinite(slotId)) {
-    params.set("kurs", String(slotId));
+  if (courseTypeId !== undefined && Number.isFinite(courseTypeId)) {
+    params.set("kursart", String(courseTypeId));
   }
   const query = params.toString();
   return query ? `/admin/workouts?${query}` : "/admin/workouts";
@@ -443,33 +443,66 @@ export async function deleteCourseType(formData: FormData) {
 // Workout eines Termins speichern (RW-3). Gepflegt wird es unter
 // /admin/workouts: Tag öffnen, Kurs im Dropdown wählen, Text schreiben - der
 // Inhalt hängt am Termin, nicht mehr an einer separaten Trainings-Liste.
+/**
+ * Speichert das Workout einer Kursart für einen Tag - also auf allen Terminen
+ * dieser Kursart an diesem Tag (Box-Wod 17-18 und 18-19 Uhr bekommen denselben
+ * Text). Die Termin-IDs kommen bewusst nicht aus dem Formular, sondern werden
+ * hier aus Tag und Kursart ermittelt.
+ */
 export async function saveWorkout(formData: FormData) {
-  const slotId = Number(formData.get("slotId"));
+  const courseTypeId = Number(formData.get("courseTypeId"));
   const dateKey = String(formData.get("dateKey") ?? "");
   const content = String(formData.get("workoutContent") ?? "").trim() || null;
-  const backUrl = workoutsUrl(dateKey, slotId);
+  const backUrl = workoutsUrl(dateKey, courseTypeId);
 
-  if (!Number.isFinite(slotId)) {
-    redirect(buildUrl(backUrl, "Kein Termin ausgewählt."));
+  if (!Number.isFinite(courseTypeId)) {
+    redirect(buildUrl(backUrl, "Keine Kursart ausgewählt."));
   }
 
+  if (!parseDateKey(dateKey)) {
+    redirect(buildUrl(backUrl, "Kein Tag ausgewählt."));
+  }
+
+  // Tagesgrenzen in Box-Ortszeit, damit auf einem UTC-Server nicht die
+  // Randtermine des Nachbartags erwischt werden.
+  const dayStart = boxWallTimeToDate(dateKey, "00:00");
+  const dayEnd = boxWallTimeToDate(
+    toDateKey(addDays(parseDateKey(dateKey)!, 1)),
+    "00:00",
+  );
+
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("appointment_slots")
     .update({ workout_content: content })
-    .eq("id", slotId);
+    .eq("course_type_id", courseTypeId)
+    .gte("start_time", dayStart.toISOString())
+    .lt("start_time", dayEnd.toISOString())
+    .select("id");
 
   if (error) {
     redirect(buildUrl(backUrl, error.message));
   }
 
+  const slotIds = (updated ?? []).map((s) => s.id);
+
+  if (slotIds.length === 0) {
+    redirect(
+      buildUrl(backUrl, "Zu dieser Kursart gibt es an dem Tag keine Termine."),
+    );
+  }
+
   revalidatePath("/admin/workouts");
   revalidatePath("/kalender");
-  revalidatePath(`/kalender/${slotId}`);
+  for (const id of slotIds) {
+    revalidatePath(`/kalender/${id}`);
+  }
+
+  const scope = slotIds.length > 1 ? ` (${slotIds.length} Termine)` : "";
   redirect(
     successUrl(
       backUrl,
-      content ? "Workout gespeichert." : "Workout geleert.",
+      content ? `Workout gespeichert.${scope}` : `Workout geleert.${scope}`,
     ),
   );
 }
@@ -740,7 +773,9 @@ export async function updateUserSettings(formData: FormData) {
 function parseRoles(formData: FormData): UserRole[] | null {
   const selected = formData.getAll("roles").map(String);
 
-  if (selected.some((r) => r !== "admin" && r !== "instructor" && r !== "user")) {
+  if (
+    selected.some((r) => r !== "admin" && r !== "instructor" && r !== "user")
+  ) {
     return null;
   }
 
@@ -824,7 +859,10 @@ export async function setUserActive(formData: FormData) {
   // geschützt, dieser Fall hier nicht).
   if (!newActive && user?.id === userId) {
     redirect(
-      buildUrl("/admin/nutzer", "Du kannst dein eigenes Konto nicht deaktivieren."),
+      buildUrl(
+        "/admin/nutzer",
+        "Du kannst dein eigenes Konto nicht deaktivieren.",
+      ),
     );
   }
 
@@ -950,7 +988,9 @@ async function provisionUser(
       .update({ phone: input.phone })
       .eq("id", userId);
     if (error) {
-      warnings.push(`Telefon konnte nicht gespeichert werden (${error.message})`);
+      warnings.push(
+        `Telefon konnte nicht gespeichert werden (${error.message})`,
+      );
     }
   }
 
@@ -987,7 +1027,9 @@ export async function importUsers(formData: FormData) {
   // Der Service-Role-Client umgeht RLS - die Admin-Prüfung MUSS deshalb
   // hier im Code passieren.
   if (!(await isAdmin())) {
-    redirect(buildUrl("/admin/nutzer", "Nur Admins dürfen Nutzer importieren."));
+    redirect(
+      buildUrl("/admin/nutzer", "Nur Admins dürfen Nutzer importieren."),
+    );
   }
 
   const file = formData.get("file");
@@ -1009,8 +1051,7 @@ export async function importUsers(formData: FormData) {
 
   // BOM aus Excel-Exporten entfernen, Leerzeilen ignorieren.
   const rawText = await file.text();
-  const text =
-    rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
+  const text = rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
   const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
 
   if (lines.length < 2) {
@@ -1149,7 +1190,9 @@ export async function createUser(formData: FormData) {
   const endsOn = String(formData.get("endsOn") ?? "").trim() || null;
 
   if (!email.includes("@")) {
-    redirect(buildUrl("/admin/nutzer", "Bitte eine gültige E-Mail-Adresse angeben."));
+    redirect(
+      buildUrl("/admin/nutzer", "Bitte eine gültige E-Mail-Adresse angeben."),
+    );
   }
 
   const roles = parseRoles(formData);

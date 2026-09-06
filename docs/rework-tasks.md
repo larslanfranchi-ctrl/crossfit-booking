@@ -136,7 +136,8 @@ benannt, angelegt und dann am Termin verknüpft werden — zwei getrennte Orte, 
 - Speichern aktualisiert den Inhalt sofort; die Nutzeransicht
   ([kalender/[id]](../src/app/(protected)/kalender/[id]/page.tsx), Tab "Workout") zeigt ihn unverändert an.
 - Bestehende Trainingsinhalte gehen bei der Umstellung nicht verloren.
-- Keine geteilten Vorlagen mehr: ein Workout gehört zu genau einem Termin.
+- Keine geteilten Vorlagen mehr: ein Workout gehört zu genau einem Tag; mehrfach am Tag
+  stattfindende Termine derselben Kursart teilen sich den Text (siehe Nachtrag unten).
 
 ### Technische Schritte
 1. **Datenmodell entscheiden** (siehe offene Punkte), dann Migration:
@@ -166,6 +167,11 @@ benannt, angelegt und dann am Termin verknüpft werden — zwei getrennte Orte, 
   mit Tagesauswahl → Kurs-Dropdown des Tages → Rich-Text-Maske → Speichern.
 - Feld „Training" ist aus Einzel- und Serientermin-Formular entfernt; `/admin/trainings` samt
   Kacheln und Actions ist gelöscht, das Menü zeigt jetzt „Workouts".
+- Nachtrag 2026-09-06: Das Dropdown wählt die **Kursart** des Tages statt des einzelnen
+  Termins (Label „Box-Wod · 17:00–18:00, 18:00–19:00"). Läuft dieselbe Kursart mehrfach am
+  Tag, ist das Workout dasselbe; `saveWorkout(courseTypeId, dateKey, content)` schreibt den
+  Text auf alle Termine dieser Kursart an diesem Tag. Gespeichert wird weiterhin pro Termin
+  in `appointment_slots.workout_content` — nur die Pflege ist zusammengefasst.
 
 ### Entschiedene Punkte
 - **Wiederverwendbarkeit:** Variante A — ein Workout gehört zu genau einem Termin. Eine

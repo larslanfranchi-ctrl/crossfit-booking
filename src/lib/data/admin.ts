@@ -60,6 +60,7 @@ export type DaySlot = {
   id: number;
   start_time: string;
   end_time: string;
+  courseTypeId: number;
   courseTypeName: string | null;
   workoutContent: string | null;
 };
@@ -111,6 +112,7 @@ export async function getSlotsForWeek(dateKey: string): Promise<DaySlot[]> {
     id: slot.id,
     start_time: slot.start_time,
     end_time: slot.end_time,
+    courseTypeId: slot.course_type_id,
     courseTypeName: courseTypeNameById.get(slot.course_type_id) ?? null,
     workoutContent: slot.workout_content,
   }));

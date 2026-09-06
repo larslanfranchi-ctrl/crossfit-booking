@@ -6,17 +6,21 @@ import { WorkoutDayPicker } from "@/components/workout-day-picker";
 import { WorkoutCourseSelect } from "@/components/workout-course-select";
 
 /**
- * Workout-Pflege entlang des tatsächlichen Ablaufs (RW-3): Tag öffnen, Kurs
+ * Workout-Pflege entlang des tatsächlichen Ablaufs (RW-3): Tag öffnen, Kursart
  * im Dropdown wählen, Workout schreiben. Der Text hängt am Termin
  * (appointment_slots.workout_content) - die frühere Stammdatenliste
  * "Trainings" mit vorab benannten Einträgen entfällt damit.
+ *
+ * Gewählt wird die Kursart statt des einzelnen Termins: läuft dieselbe Kursart
+ * mehrfach am Tag (Box-Wod 17-18 und 18-19 Uhr), ist das Workout dasselbe -
+ * gespeichert wird es deshalb auf allen Terminen der Kursart an diesem Tag.
  */
 export default async function WorkoutsPage({
   searchParams,
 }: {
   searchParams: Promise<{
     datum?: string;
-    kurs?: string;
+    kursart?: string;
     error?: string;
     message?: string;
   }>;
@@ -38,11 +42,53 @@ export default async function WorkoutsPage({
     {},
   );
 
-  // Ohne "kurs" (oder mit einem, der nicht zum Tag gehört) den ersten Termin
-  // des Tages zeigen, damit die Maske nie leer bleibt, wenn es Kurse gibt.
-  const requestedSlotId = params.kurs ? Number(params.kurs) : null;
-  const selectedSlot =
-    daySlots.find((s) => s.id === requestedSlotId) ?? daySlots[0] ?? null;
+  // Termine des Tages zu Kursarten zusammenfassen - in der Reihenfolge des
+  // ersten Termins, damit die Liste dem Tagesablauf folgt.
+  const courseGroups: {
+    courseTypeId: number;
+    courseTypeName: string | null;
+    slotIds: number[];
+    times: string[];
+    workoutContent: string | null;
+    /** Mehrere Termine der Kursart haben heute unterschiedliche Texte. */
+    hasDivergingContent: boolean;
+  }[] = [];
+
+  for (const slot of daySlots) {
+    const time = `${formatTime(slot.start_time)}–${formatTime(slot.end_time)}`;
+    const group = courseGroups.find(
+      (g) => g.courseTypeId === slot.courseTypeId,
+    );
+
+    if (!group) {
+      courseGroups.push({
+        courseTypeId: slot.courseTypeId,
+        courseTypeName: slot.courseTypeName,
+        slotIds: [slot.id],
+        times: [time],
+        workoutContent: slot.workoutContent,
+        hasDivergingContent: false,
+      });
+      continue;
+    }
+
+    group.slotIds.push(slot.id);
+    group.times.push(time);
+    if ((slot.workoutContent ?? "") !== (group.workoutContent ?? "")) {
+      group.hasDivergingContent = true;
+      // Der erste hinterlegte Text gewinnt, damit die Maske nicht leer
+      // bleibt, wenn nur ein Termin der Kursart gepflegt wurde.
+      group.workoutContent ??= slot.workoutContent;
+    }
+  }
+
+  // Ohne "kursart" (oder mit einer, die es an dem Tag nicht gibt) die erste
+  // Kursart des Tages zeigen, damit die Maske nie leer bleibt.
+  const requestedCourseTypeId = params.kursart ? Number(params.kursart) : null;
+  const selectedGroup =
+    courseGroups.find((g) => g.courseTypeId === requestedCourseTypeId) ??
+    courseGroups[0] ??
+    null;
 
   return (
     <div className="space-y-6">
@@ -66,7 +112,7 @@ export default async function WorkoutsPage({
           slotCountsByDate={slotCountsByDate}
         />
 
-        {daySlots.length === 0 ? (
+        {!selectedGroup ? (
           <p className="rounded border border-stone-200 px-3 py-6 text-center text-sm text-stone-400">
             An diesem Tag gibt es keine Termine. Termine werden unter
             &bdquo;Terminverwaltung&ldquo; angelegt.
@@ -75,29 +121,40 @@ export default async function WorkoutsPage({
           <>
             <WorkoutCourseSelect
               dateKey={dateKey}
-              slotId={selectedSlot!.id}
-              options={daySlots.map((s) => ({
-                slotId: s.id,
-                label: `${formatTime(s.start_time)}–${formatTime(s.end_time)} · ${
-                  s.courseTypeName ?? "Unbekannte Kursart"
-                }`,
-                hasWorkout: Boolean(s.workoutContent),
+              courseTypeId={selectedGroup.courseTypeId}
+              options={courseGroups.map((g) => ({
+                courseTypeId: g.courseTypeId,
+                label: `${g.courseTypeName ?? "Unbekannte Kursart"} · ${g.times.join(", ")}`,
+                hasWorkout: Boolean(g.workoutContent),
               }))}
             />
 
             <form action={saveWorkout} className="space-y-3">
-              <input type="hidden" name="slotId" value={selectedSlot!.id} />
+              <input
+                type="hidden"
+                name="courseTypeId"
+                value={selectedGroup.courseTypeId}
+              />
               <input type="hidden" name="dateKey" value={dateKey} />
               <div>
                 <span className="block text-sm font-medium">Workout</span>
                 {/* key: erzwingt einen frischen Editor beim Kurswechsel -
-                    sonst bliebe der Text des vorherigen Kurses stehen. */}
+                    sonst bliebe der Text der vorherigen Kursart stehen. */}
                 <RichTextEditor
-                  key={selectedSlot!.id}
+                  key={selectedGroup.courseTypeId}
                   name="workoutContent"
-                  defaultValueHtml={selectedSlot!.workoutContent}
+                  defaultValueHtml={selectedGroup.workoutContent}
                 />
               </div>
+
+              {selectedGroup.slotIds.length > 1 && (
+                <p className="text-xs text-stone-500">
+                  {selectedGroup.hasDivergingContent
+                    ? `Die ${selectedGroup.slotIds.length} Termine dieser Kursart haben heute unterschiedliche Workouts - Speichern überschreibt alle mit diesem Text.`
+                    : `Gilt für alle ${selectedGroup.slotIds.length} Termine dieser Kursart an diesem Tag.`}
+                </p>
+              )}
+
               <button
                 type="submit"
                 className="rounded bg-primary-600 px-4 py-2 font-semibold text-black brand-fill"
