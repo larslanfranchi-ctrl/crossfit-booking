@@ -7,6 +7,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // manifest.webmanifest muss ausgenommen bleiben: laeuft es durch
+    // updateSession, bekommt ein ausgeloggter Besucher statt des Manifests
+    // einen Redirect auf /login - der Browser kann es dann nicht parsen und
+    // bietet die Installation gar nicht erst an.
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

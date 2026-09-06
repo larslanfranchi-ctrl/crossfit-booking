@@ -17,6 +17,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: "light",
+  // Faerbt im installierten Zustand die Systemleisten in den App-Hintergrund,
+  // damit die Statusleiste nicht als weisser Streifen ueber dem dunklen
+  // Layout steht. Gleicher Wert wie background_color im Manifest.
+  themeColor: "#08090c",
 };
 
 export default function RootLayout({

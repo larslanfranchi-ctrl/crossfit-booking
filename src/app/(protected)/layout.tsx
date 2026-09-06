@@ -2,6 +2,7 @@ import Image from "next/image";
 import { getUserRole } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/bottom-nav";
 import { HeaderMenu } from "@/components/header-menu";
+import { InstallPrompt } from "@/components/install-prompt";
 
 export default async function ProtectedLayout({
   children,
@@ -31,6 +32,7 @@ export default async function ProtectedLayout({
         </nav>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8 pb-28">
+        <InstallPrompt />
         {children}
       </main>
       <BottomNav />
