@@ -48,9 +48,9 @@ export default async function HomePage({
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center opacity-50"
+          className="object-cover object-center opacity-80"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/85 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/70 to-background" />
       </div>
 
       <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
@@ -99,7 +99,7 @@ export default async function HomePage({
       </div>
 
       {bookings.length === 0 && (
-        <div className="rounded-xl border border-stone-200 p-6 text-center">
+        <div className="p-6 text-center">
           <p className="mb-3 text-sm text-stone-500">
             Du hast aktuell keine gebuchten Termine.
           </p>
