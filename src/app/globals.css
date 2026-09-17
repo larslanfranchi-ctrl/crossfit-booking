@@ -28,11 +28,10 @@
   --color-glass-edge: rgba(255, 255, 255, 0.14);
 
   /* Tiefe. shadow-card für alles Erhabene, shadow-bar für Leisten, die über
-     scrollendem Inhalt liegen (wirft nach oben), shadow-brand für das Glühen
-     unter gelben Flächen. */
+     scrollendem Inhalt liegen (wirft nach oben). Gelbe Flächen bekommen
+     bewusst keinen Schatten - siehe brand-fill. */
   --shadow-card: 0 14px 30px -14px rgb(0 0 0 / 0.9), 0 2px 6px -2px rgb(0 0 0 / 0.6);
   --shadow-bar: 0 -14px 34px -14px rgb(0 0 0 / 0.95);
-  --shadow-brand: 0 10px 24px -10px rgb(255 224 27 / 0.55);
 
   /* Marken-Gelb (primary = Aktionen & Akzent). Text auf primary ist schwarz.
      500/600 sind unverändert das Logo-Gelb; 400 ist die aufgehellte Stufe
@@ -106,13 +105,12 @@
     var(--shadow-bar);
 }
 
-/* Gelbe Fläche mit Glühen - für die eine primäre Aktion pro Bildschirm.
-   Bewusst flach: kein Verlauf und keine Spiegelkante, das Gelb steht als
-   reine Farbe. Ergänzt `bg-primary-600` (bleibt die Füllung) und bringt
-   seinen Hover selbst mit. */
+/* Gelbe Fläche für die eine primäre Aktion pro Bildschirm. Komplett flach:
+   kein Verlauf, keine Spiegelkante, kein Glühen - das Gelb steht als reine
+   Farbe und trägt die Aufmerksamkeit allein. Ergänzt `bg-primary-600`
+   (bleibt die Füllung) und bringt seinen Hover selbst mit. */
 @utility brand-fill {
   background-color: var(--color-primary-500);
-  box-shadow: var(--shadow-brand);
 
   &:hover {
     background-color: var(--color-primary-400);
@@ -120,13 +118,9 @@
 }
 
 body {
-  /* Zwei sehr schwache Lichtquellen - Marken-Gelb oben rechts, kühles Blau
-     unten links. Sie geben dem Glas etwas zum Spiegeln; ohne sie ist der
-     Grund zu flach dafür. */
-  background:
-    radial-gradient(120% 55% at 80% -10%, rgb(255 224 27 / 0.1), rgb(255 224 27 / 0) 55%),
-    radial-gradient(95% 50% at -12% 106%, rgb(96 132 255 / 0.11), rgb(96 132 255 / 0) 60%),
-    var(--background);
+  /* Bewusst ein flacher, ungetönter Grund: keine farbigen Lichtquellen, kein
+     Glühen. Tiefe kommt allein über Schatten und Kanten. */
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
