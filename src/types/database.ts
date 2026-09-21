@@ -202,6 +202,34 @@ export type Database = {
         };
         Relationships: [];
       };
+      personal_records: {
+        Row: {
+          user_id: string;
+          lift_key: string;
+          // NUMERIC liefert PostgREST als String aus.
+          value_kg: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          lift_key: string;
+          value_kg: number;
+          updated_at?: string;
+        };
+        Update: {
+          value_kg?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "personal_records_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       bookings: {
         Row: {
           id: number;

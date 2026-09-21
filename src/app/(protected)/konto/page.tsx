@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ChevronRight,
+  Dumbbell,
   History,
   KeyRound,
   LogOut,
@@ -40,6 +41,7 @@ export default async function KontoPage() {
 
   const accountItems = [
     { href: "/konto/daten", label: "Profildaten", Icon: UserRound },
+    { href: "/konto/kraftwerte", label: "Kraftwerte", Icon: Dumbbell },
     { href: "/konto/passwort", label: "Passwort", Icon: KeyRound },
   ];
 

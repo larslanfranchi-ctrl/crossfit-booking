@@ -21,7 +21,12 @@ Stories). **Bisher umgesetzt:**
   Kursleiter:innen sind ausgenommen). Das Restguthaben steht auf `/home`,
   die Limits pflegen Admins pro Abo unter `/admin/abos`.
 - Profil-Hub: `/konto` bündelt Abo, Buchungshistorie, Profildaten,
-  Passwortwechsel (mit Abfrage des aktuellen Passworts) und Abmelden.
+  Kraftwerte, Passwortwechsel (mit Abfrage des aktuellen Passworts) und
+  Abmelden.
+- Kraftwerte/PRs: Mitglieder hinterlegen unter `/konto/kraftwerte` ihre
+  Bestleistungen in Kilogramm - eine Liste fester Übungen (Katalog in
+  `src/lib/lifts.ts`), pro Übung ein Wert. Die Werte sind privat, auch
+  Admins sehen sie nicht.
 - Nutzerverwaltung: `/admin/nutzer` zeigt eine kompakte Übersicht mit
   Kennzahlen (gesamt, aktiv, Team, mit gültigem Abo), Volltextsuche über
   Name/E-Mail und Filtern nach Rolle und Status. Pro Nutzer werden Rollen,
