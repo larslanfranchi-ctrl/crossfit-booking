@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getMyUpcomingBookings } from "@/lib/data/slots";
 import { getMyCheckinBalance } from "@/lib/data/memberships";
@@ -32,27 +31,6 @@ export default async function HomePage({
 
   return (
     <div>
-      {/* Hintergrundfoto der Box - nur auf der Startseite. Fixiert, damit es
-          beim Scrollen der Terminliste stehen bleibt, und per -z-10 hinter
-          den Layout-Inhalt gelegt (aber vor den Body-Grund). Der Verlauf
-          darueber laeuft nach unten ins Schwarz: oben bleibt Textur hinter
-          Header und Kennzahlen, weiter unten liegen die Glas-Kacheln wieder
-          auf ruhigem Grund und bleiben lesbar.
-          Das Foto ist normales Querformat (547x365). Auf dem hochkanten
-          Handy-Viewport schneidet cover links und rechts weg - mittig
-          ankern haelt die Halle mit Rig und Torfenster im Bild. */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-        <Image
-          src="/home-background.jpg"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center opacity-80"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/70 to-background" />
-      </div>
-
       <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
         Meine Termine
       </h1>

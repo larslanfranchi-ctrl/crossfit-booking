@@ -3,6 +3,7 @@ import { isAdmin } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/bottom-nav";
 import { HeaderMenu } from "@/components/header-menu";
 import { InstallPrompt } from "@/components/install-prompt";
+import { PageBackground } from "@/components/page-background";
 
 export default async function ProtectedLayout({
   children,
@@ -13,6 +14,7 @@ export default async function ProtectedLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
+      <PageBackground />
       <header className="glass border-b border-stone-200 px-6 py-4">
         <nav className="mx-auto flex max-w-5xl items-center justify-between">
           <span className="flex items-center gap-2.5">
