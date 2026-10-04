@@ -3,8 +3,8 @@
 Erfasst: 2026-10-04 · Ergänzung zu [fachkonzept.md](fachkonzept.md) und [rework-tasks.md](rework-tasks.md)
 
 **Status: VB-1 umgesetzt. VB-2 umgesetzt (Migration 046 ausgeführt), Mail-Versand
-zurückgestellt. VB-3 und VB-4 umgesetzt (Migration 047 ausgeführt). VB-5 entschieden: Supabase-Backups,
-Plan prüfen.**
+zurückgestellt. VB-3 und VB-4 umgesetzt (Migration 047 ausgeführt). VB-5 zurückgestellt
+(Supabase-Backups reichen, Plan noch nicht geprüft).**
 Reihenfolge unten ist die Eingabereihenfolge, keine Priorisierung.
 
 ---
@@ -146,3 +146,6 @@ Drive)? Und wie lange werden die Kopien aufbewahrt?
 **Entscheid (2026-10-04):** Die Supabase-eigenen Backups reichen, ein eigener Dump wird nicht
 gebaut. Kein Code nötig. Voraussetzung ist ein Supabase-Plan mit automatischen Backups
 (nicht Free) — zu prüfen unter Dashboard → Database → Backups.
+
+**Zurückgestellt (2026-10-04):** Die Prüfung des Plans ist noch nicht erfolgt. Solange das
+Projekt im Free-Plan läuft, gibt es kein Backup.
