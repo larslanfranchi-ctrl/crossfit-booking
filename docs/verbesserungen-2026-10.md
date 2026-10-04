@@ -3,7 +3,8 @@
 Erfasst: 2026-10-04 · Ergänzung zu [fachkonzept.md](fachkonzept.md) und [rework-tasks.md](rework-tasks.md)
 
 **Status: VB-1 umgesetzt. VB-2 umgesetzt (Migration 046 ausgeführt), Mail-Versand
-zurückgestellt. VB-3 und VB-4 umgesetzt (Migration 047 ausgeführt). VB-5 offen.**
+zurückgestellt. VB-3 und VB-4 umgesetzt (Migration 047 ausgeführt). VB-5 entschieden: Supabase-Backups,
+Plan prüfen.**
 Reihenfolge unten ist die Eingabereihenfolge, keine Priorisierung.
 
 ---
@@ -141,3 +142,7 @@ das Backup.
 **Offen zu klären (bei der Umsetzung):** Ablageort — reichen die Supabase-eigenen Backups,
 oder soll wöchentlich ein eigener Dump außerhalb von Supabase abgelegt werden (z. B. Google
 Drive)? Und wie lange werden die Kopien aufbewahrt?
+
+**Entscheid (2026-10-04):** Die Supabase-eigenen Backups reichen, ein eigener Dump wird nicht
+gebaut. Kein Code nötig. Voraussetzung ist ein Supabase-Plan mit automatischen Backups
+(nicht Free) — zu prüfen unter Dashboard → Database → Backups.
