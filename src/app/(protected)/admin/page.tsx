@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import {
+  getAllUsers,
   getCourseTypes,
   getInstructors,
   getSlotsWithParticipants,
 } from "@/lib/data/admin";
 import {
+  addParticipant,
   copyDay,
   createRecurringSlots,
   createSlot,
   deleteSlots,
+  removeParticipant,
   updateSlot,
 } from "@/lib/actions/admin";
 import { formatDate, formatTime, toDateKey } from "@/lib/date-utils";
@@ -379,6 +382,101 @@ export default async function AdminPage({
     </div>
   );
 
+  // Teilnehmerverwaltung hängt an der Termin-Bearbeitung: dort ist genau ein
+  // Termin im Blick. In der Terminliste wäre pro Zeile ein Nutzer-Dropdown
+  // nötig - bei bis zu 200 Terminen ein unnötig großes Dokument.
+  // Die Nutzerliste wird deshalb auch nur im Bearbeiten-Modus geladen.
+  const users = isEditing ? await getAllUsers() : [];
+  const bookedUserIds = new Set(
+    (editSlot?.participants ?? []).map((p) => p.userId),
+  );
+  const bookableUsers = users.filter(
+    (u) => u.isActive && !bookedUserIds.has(u.id),
+  );
+  const isOverbooked =
+    isEditing && editSlot!.participants.length > editSlot!.capacity;
+
+  const participantsSection = isEditing ? (
+    <div className="mt-6 max-w-2xl rounded border border-stone-200 p-4">
+      <h2 className="mb-1 text-lg font-semibold">Teilnehmer</h2>
+      <p className="mb-4 text-xs text-stone-500">
+        {editSlot!.participants.length}/{editSlot!.capacity} belegt
+        {isOverbooked && " · über der Kapazität"}
+      </p>
+
+      {editSlot!.participants.length === 0 ? (
+        <p className="text-sm text-stone-400">Noch niemand angemeldet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {editSlot!.participants.map((p) => (
+            <li
+              key={p.userId}
+              className="flex items-center justify-between gap-3 text-sm"
+            >
+              <span>{p.fullName ?? "Unbenannter Nutzer"}</span>
+              {/* Eigenes Formular je Zeile: die Liste darf nicht in einem
+                  gemeinsamen Formular stehen, sonst entfernt ein Klick die
+                  falsche Buchung. */}
+              <form action={removeParticipant}>
+                <input type="hidden" name="slotId" value={editSlot!.id} />
+                <input type="hidden" name="userId" value={p.userId} />
+                <ConfirmSubmitButton
+                  confirmMessage={`${p.fullName ?? "Diese Person"} wirklich von diesem Termin entfernen?`}
+                  className="rounded bg-error-50 px-3 py-1 text-xs text-error-700 hover:bg-error-100"
+                >
+                  Entfernen
+                </ConfirmSubmitButton>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form
+        action={addParticipant}
+        className="mt-4 flex flex-wrap items-end gap-3 border-t border-stone-200 pt-4"
+      >
+        <input type="hidden" name="slotId" value={editSlot!.id} />
+        <div className="min-w-56 flex-1">
+          <label htmlFor="userId" className="block text-sm font-medium">
+            Person hinzubuchen
+          </label>
+          <select
+            id="userId"
+            name="userId"
+            required
+            defaultValue=""
+            className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          >
+            <option value="" disabled>
+              Bitte auswählen
+            </option>
+            {bookableUsers.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.fullName ? `${u.fullName} (${u.email})` : u.email}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="rounded bg-primary-600 px-4 py-2 text-sm font-semibold text-black brand-fill"
+        >
+          Hinzubuchen
+        </button>
+      </form>
+      <p className="mt-2 text-xs text-stone-500">
+        Manuelles Hinzubuchen ignoriert Kapazität und Abo. Die Person bekommt
+        eine E-Mail mit dem Termin.
+      </p>
+      {bookableUsers.length === 0 && (
+        <p className="mt-2 text-xs text-stone-400">
+          Alle aktiven Nutzer:innen sind für diesen Termin schon angemeldet.
+        </p>
+      )}
+    </div>
+  ) : null;
+
   return (
     <div className="space-y-10">
       <div>
@@ -408,6 +506,8 @@ export default async function AdminPage({
         ) : (
           <CreateSlotTabs single={singleForm} series={seriesForm} copy={copyForm} />
         )}
+
+        {isEditing && participantsSection}
       </div>
 
       <form action={deleteSlots}>

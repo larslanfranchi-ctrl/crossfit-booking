@@ -236,10 +236,13 @@ export type Database = {
           slot_id: number;
           user_id: string;
           booked_at: string;
+          /** Seit 046: gesetzt, wenn ein Admin die Person manuell gebucht hat. */
+          booked_by: string | null;
         };
         Insert: {
           slot_id: number;
           user_id: string;
+          booked_by?: string | null;
         };
         Update: Record<string, never>;
         // Die Fremdschlüssel aus 005_bookings.sql. supabase-js löst

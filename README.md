@@ -75,6 +75,12 @@ Kurs-Einschränkungen pro Abo (Feld „Enthaltene Kurse" ist reine Anzeige).
 7. Unter `/admin/stammdaten` mindestens eine Kursart und ein Level anlegen,
    bevor unter `/admin` Termine erstellt werden können (beides ist Pflicht
    pro Termin).
+8. Optional, für den Mail-Versand: bei [resend.com](https://resend.com) einen
+   Account anlegen, Absender-Domain verifizieren und `RESEND_API_KEY` /
+   `MAIL_FROM` setzen (lokal in `.env.local`, produktiv in den
+   Vercel-Umgebungsvariablen). Ohne diese Werte läuft die App normal weiter,
+   es gehen nur keine Mails raus — beim manuellen Hinzubuchen meldet die
+   Oberfläche das dann als Hinweis.
 
 ## Deployment
 
@@ -86,7 +92,8 @@ werden.
 ## Rollen
 
 - **Admin**: `/admin` (Termine anlegen/bearbeiten/löschen, Einzel- und
-  Serientermine), `/admin/stammdaten` (Kursarten/Level verwalten),
+  Serientermine; in der Termin-Bearbeitung Teilnehmer manuell hinzubuchen oder
+  entfernen — Hinzubuchen ignoriert Kapazität und Abo), `/admin/stammdaten` (Kursarten/Level verwalten),
   `/admin/workouts` (Workouts pro Tag und Kurs), `/admin/abos` (Abo-Angebot
   pflegen), `/admin/nutzer` (Übersicht mit Suche/Filter: Nutzer anlegen,
   Rollen vergeben, Konten deaktivieren/reaktivieren, Abos zuweisen/entfernen,

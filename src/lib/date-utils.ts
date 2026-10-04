@@ -170,3 +170,17 @@ export function formatDateLong(date: Date): string {
     month: "long",
   });
 }
+
+/**
+ * Datum mit Jahr ("Sonntag, 6. September 2026") - für E-Mails, die auch
+ * Wochen später noch eindeutig sein müssen.
+ */
+export function formatDateLongWithYear(date: Date): string {
+  return date.toLocaleDateString("de-DE", {
+    timeZone: BOX_TIME_ZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}

@@ -7,10 +7,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   addDays,
   boxWallTimeToDate,
+  formatDate,
+  formatDateLongWithYear,
   formatTime,
   parseDateKey,
   toDateKey,
 } from "@/lib/date-utils";
+import { sendMail } from "@/lib/mail";
 import type { UserRole } from "@/types/database";
 
 function buildAdminUrl(error?: string) {
@@ -1246,4 +1249,176 @@ export async function createUser(formData: FormData) {
       ? buildUrl("/admin/nutzer", message)
       : successUrl("/admin/nutzer", message),
   );
+}
+
+// Zurück in die Termin-Bearbeitung, aus der hinzugebucht wurde - der Admin
+// bleibt damit beim Termin, statt oben in der Liste zu landen.
+function slotEditUrl(
+  slotId: number,
+  feedback: { error?: string; message?: string },
+) {
+  const params = new URLSearchParams({ edit: String(slotId) });
+  if (feedback.error) params.set("error", feedback.error);
+  if (feedback.message) params.set("message", feedback.message);
+  return `/admin?${params.toString()}`;
+}
+
+// Person manuell auf einen Termin buchen (VB-2). Kapazität und Abo werden
+// bewusst nicht geprüft: die Datenbank überspringt beide Trigger, sobald
+// booked_by gesetzt ist (046). Erlaubt ist das nur Admins - durchgesetzt von
+// der RLS-Policy "Admins can book anyone manually", die booked_by =
+// auth.uid() verlangt. Der Client hier ist deshalb der normale Nutzer-Client
+// und nicht der Service-Role-Client.
+export async function addParticipant(formData: FormData) {
+  if (!(await isAdmin())) {
+    redirect(buildAdminUrl("Nur Admins dürfen Teilnehmer hinzubuchen."));
+  }
+
+  const slotId = Number(formData.get("slotId"));
+  const userId = String(formData.get("userId") ?? "").trim();
+
+  if (!Number.isFinite(slotId)) {
+    redirect(buildAdminUrl("Unbekannter Termin."));
+  }
+  if (!userId) {
+    redirect(slotEditUrl(slotId, { error: "Bitte eine Person auswählen." }));
+  }
+
+  const supabase = await createClient();
+  const admin = await getUser();
+
+  if (!admin) {
+    redirect("/login");
+  }
+
+  const [{ data: slot, error: slotError }, { data: users, error: usersError }] =
+    await Promise.all([
+      supabase
+        .from("appointment_slots")
+        .select("id, start_time, end_time, course_type_id")
+        .eq("id", slotId)
+        .maybeSingle(),
+      // Liefert Name und E-Mail in einem Aufruf - beides wird für die
+      // Bestätigungsmail gebraucht. Die Funktion prüft selbst auf Admin.
+      supabase.rpc("get_all_users_with_email"),
+    ]);
+
+  if (slotError || !slot) {
+    redirect(buildAdminUrl("Dieser Termin existiert nicht mehr."));
+  }
+  if (usersError) {
+    redirect(slotEditUrl(slotId, { error: usersError.message }));
+  }
+
+  const target = (users ?? []).find((u) => u.id === userId);
+
+  if (!target) {
+    redirect(slotEditUrl(slotId, { error: "Diese Person gibt es nicht mehr." }));
+  }
+  // Deaktivierte Konten bleiben aussen vor: sie sollen nicht trainieren, und
+  // die Person käme selbst nicht einmal in die App.
+  if (!target.is_active) {
+    redirect(
+      slotEditUrl(slotId, {
+        error: `${target.full_name ?? target.email} ist deaktiviert und kann nicht gebucht werden.`,
+      }),
+    );
+  }
+
+  const { error: insertError } = await supabase.from("bookings").insert({
+    slot_id: slotId,
+    user_id: userId,
+    booked_by: admin.id,
+  });
+
+  if (insertError) {
+    redirect(
+      slotEditUrl(slotId, {
+        error:
+          insertError.code === "23505"
+            ? `${target.full_name ?? target.email} ist für diesen Termin bereits angemeldet.`
+            : insertError.message,
+      }),
+    );
+  }
+
+  const { data: courseType } = await supabase
+    .from("course_types")
+    .select("name")
+    .eq("id", slot.course_type_id)
+    .maybeSingle();
+
+  const courseName = courseType?.name ?? "Training";
+  const when = `${formatDateLongWithYear(new Date(slot.start_time))}, ${formatTime(slot.start_time)} – ${formatTime(slot.end_time)}`;
+
+  const mail = await sendMail({
+    to: target.email,
+    subject: `Anmeldung: ${courseName} am ${formatDate(new Date(slot.start_time))}`,
+    text: [
+      target.full_name ? `Hallo ${target.full_name}` : "Hallo",
+      "",
+      `du wurdest vom Lionsoul-Team für folgenden Termin angemeldet:`,
+      "",
+      `${courseName}`,
+      `${when}`,
+      "",
+      "Du findest den Termin in der App unter „Kalender“ und kannst dich dort auch wieder abmelden.",
+      "",
+      "Bis bald im Lionsoul Performance",
+    ].join("\n"),
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/kalender");
+  revalidatePath("/kalender/[id]", "page");
+  revalidatePath("/home");
+
+  const name = target.full_name ?? target.email;
+
+  // Die Buchung steht - ein gescheiterter Mailversand wird deshalb als
+  // Hinweis gemeldet und nicht als Fehlschlag der Aktion.
+  redirect(
+    mail.sent
+      ? slotEditUrl(slotId, {
+          message: `${name} hinzugebucht und per E-Mail informiert.`,
+        })
+      : slotEditUrl(slotId, {
+          error: `${name} hinzugebucht, aber die E-Mail ging nicht raus: ${mail.reason}`,
+        }),
+  );
+}
+
+// Gegenstück zum Hinzubuchen: Fehlgriffe müssen korrigierbar sein. Die
+// Rechte dafür hat der Admin seit 010 ("admins cancel any"); es fehlte nur
+// die Oberfläche. Es geht bewusst keine Mail raus - das wäre ein eigener
+// Entscheid.
+export async function removeParticipant(formData: FormData) {
+  if (!(await isAdmin())) {
+    redirect(buildAdminUrl("Nur Admins dürfen Buchungen entfernen."));
+  }
+
+  const slotId = Number(formData.get("slotId"));
+  const userId = String(formData.get("userId") ?? "").trim();
+
+  if (!Number.isFinite(slotId) || !userId) {
+    redirect(buildAdminUrl("Unbekannte Buchung."));
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("bookings")
+    .delete()
+    .eq("slot_id", slotId)
+    .eq("user_id", userId);
+
+  if (error) {
+    redirect(slotEditUrl(slotId, { error: error.message }));
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/kalender");
+  revalidatePath("/kalender/[id]", "page");
+  revalidatePath("/home");
+  redirect(slotEditUrl(slotId, { message: "Buchung entfernt." }));
 }

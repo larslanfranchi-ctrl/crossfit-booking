@@ -2,7 +2,8 @@
 
 Erfasst: 2026-10-04 · Ergänzung zu [fachkonzept.md](fachkonzept.md) und [rework-tasks.md](rework-tasks.md)
 
-**Status: VB-1 umgesetzt, VB-2 bis VB-5 offen.**
+**Status: VB-1 umgesetzt. VB-2 umgesetzt (Migration 046 ausgeführt), Mail-Versand
+zurückgestellt. VB-3 bis VB-5 offen.**
 Reihenfolge unten ist die Eingabereihenfolge, keine Priorisierung.
 
 ---
@@ -49,6 +50,41 @@ ein Hinweis an den Admin.
 
 **Benachrichtigung (entschieden 2026-10-04):** Die hinzugebuchte Person bekommt eine E-Mail
 über die Buchung.
+
+### Umgesetzt (2026-10-04)
+- **Datenbank:** [046_admin_manual_bookings.sql](../supabase/sql/046_admin_manual_bookings.sql)
+  bringt `bookings.booked_by`. Ist die Spalte gesetzt, überspringen beide Trigger ihre
+  Prüfung — `enforce_slot_capacity` (006) und `enforce_checkin_limit` (039). Damit ist der
+  Override an die Buchung geschrieben statt an eine Rollenabfrage im Trigger, und man sieht
+  später, wer eine Überbuchung veranlasst hat.
+- **Rechte:** neue Policy „Admins can book anyone manually" (INSERT, verlangt `is_admin()`
+  und `booked_by = auth.uid()`); die Selbstbuchungs-Policy verlangt zusätzlich
+  `booked_by IS NULL`. Ein normaler Nutzer kann sich den Override also nicht selbst
+  ausstellen — deshalb braucht die Action auch keinen Service-Role-Client.
+- **Oberfläche:** in der Termin-Bearbeitung (`/admin?edit=<id>`) ein Block „Teilnehmer" mit
+  Belegung, Liste, „Entfernen" je Person und einem Dropdown „Person hinzubuchen". Bewusst
+  dort und nicht in der Terminliste: sonst bräuchte jede der bis zu 200 Zeilen ein eigenes
+  Nutzer-Dropdown.
+- **Actions:** `addParticipant` / `removeParticipant` in
+  [admin.ts](../src/lib/actions/admin.ts).
+- **Mail:** [src/lib/mail.ts](../src/lib/mail.ts) verschickt über die Resend-REST-API, ohne
+  zusätzliche Abhängigkeit. `sendMail` wirft nie — scheitert der Versand, steht die Buchung
+  trotzdem und die Oberfläche meldet den Grund als Hinweis.
+- Deaktivierte Konten können **nicht** hinzugebucht werden (sie kämen selbst nicht in die
+  App); das ist die einzige Grenze, die bestehen bleibt.
+- `tsc --noEmit`, ESLint und `npm run build` laufen durch.
+
+### Noch zu tun (ausserhalb des Codes)
+1. ~~`046_admin_manual_bookings.sql` im Supabase-SQL-Editor ausführen~~ — erledigt 2026-10-04.
+2. **Zurückgestellt (2026-10-04):** Resend-Account anlegen, Absender-Domain verifizieren und `RESEND_API_KEY` / `MAIL_FROM`
+   in Vercel (und lokal in `.env.local`) setzen. Ohne die Werte funktioniert das Hinzubuchen,
+   nur die Mail bleibt aus und wird als Hinweis gemeldet.
+
+### Offen gelassen
+- Beim **Entfernen** geht keine Mail raus — das wäre ein eigener Entscheid.
+- Im Kalender der Teilnehmer:innen ist eine manuelle Buchung nicht als „vom Team gebucht"
+  markiert; sie sieht wie eine eigene Buchung aus und kann von der Person selbst storniert
+  werden.
 
 ---
 
