@@ -3,7 +3,7 @@
 Erfasst: 2026-10-04 · Ergänzung zu [fachkonzept.md](fachkonzept.md) und [rework-tasks.md](rework-tasks.md)
 
 **Status: VB-1 umgesetzt. VB-2 umgesetzt (Migration 046 ausgeführt), Mail-Versand
-zurückgestellt. VB-3 bis VB-5 offen.**
+zurückgestellt. VB-3 und VB-4 umgesetzt (Migration 047 ausgeführt). VB-5 offen.**
 Reihenfolge unten ist die Eingabereihenfolge, keine Priorisierung.
 
 ---
@@ -95,6 +95,12 @@ Die Pfeile zum Wechseln der Woche sind durch den geringen Kontrast kaum zu erken
 **Soll:** Die Pfeilfarbe wechselt von der Farbe aus dem Hintergrundbild zu einem
 dunklen Ton.
 
+### Umsetzung (2026-10-04)
+Die Pfeile sind jetzt runde Knöpfe mit dunklem Hintergrund, feinem Rand und hellem Pfeil. Ein
+dunkler Pfeil allein wäre auf dem dunklen Design genauso schlecht zu sehen gewesen. Auf Wunsch
+haben die Wochentage denselben Hintergrund bekommen.
+Code: `src/components/kalender-client.tsx`.
+
 ---
 
 ## VB-4 — Fehlermeldung beim Deaktivieren eines Nutzers
@@ -111,6 +117,15 @@ verlagern, sodass die Policy nicht mehr auf die eigene Tabelle zurückgreift.
 
 **Offen:** betroffener Weg (Nutzerliste oder Detailansicht) noch nicht festgehalten — vor der
 Umsetzung reproduzieren und die beteiligten Policies in `supabase/sql` durchsehen.
+
+### Umsetzung (2026-10-04)
+Ursache war die WITH-CHECK-Klausel von „Users can update own profile“, die selbst aus
+`profiles` las. Seit 041/042 enthalten die SELECT-Policies von `profiles` Subqueries, und
+Postgres brach das als Rekursion ab. Betroffen war jedes UPDATE auf `profiles`, also auch
+„Meine Daten“ speichern. Die Policy prüft jetzt nur noch die eigene ID. Rolle und `is_active`
+schützt ein Trigger, der OLD und NEW vergleicht. Damit kann sich ein deaktiviertes Konto
+auch nicht mehr selbst über die API reaktivieren.
+Datenbank: `supabase/sql/047_fix_profiles_policy_recursion.sql` (ausgeführt 2026-10-04).
 
 ---
 

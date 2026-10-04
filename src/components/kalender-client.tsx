@@ -239,7 +239,7 @@ export function KalenderClient({
       <div className="mb-6 flex items-center gap-1 border-b border-stone-200 pb-4">
         <Link
           href={`/kalender?week=${toDateKey(prevWeekStart)}&day=${toDateKey(prevWeekStart)}`}
-          className="p-2 text-stone-400 hover:text-stone-600"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-50/85 text-lg leading-none text-stone-800 ring-1 ring-stone-300 hover:bg-stone-100 hover:text-stone-900"
           prefetch aria-label="Vorherige Woche"
         >
           ‹
@@ -267,9 +267,9 @@ export function KalenderClient({
                 type="button"
                 key={key}
                 onClick={() => selectDay(day.date)}
-                className="flex flex-col items-center gap-1 rounded-lg py-2 hover:bg-stone-50"
+                className="flex flex-col items-center gap-1 rounded-lg bg-stone-50/85 py-2 ring-1 ring-stone-300 hover:bg-stone-100"
               >
-                <span className="text-[10px] font-medium uppercase text-stone-400">
+                <span className="text-[10px] font-medium uppercase text-stone-500">
                   {day.label}
                 </span>
                 <span
@@ -293,7 +293,7 @@ export function KalenderClient({
         </div>
         <Link
           href={`/kalender?week=${toDateKey(nextWeekStart)}&day=${toDateKey(nextWeekStart)}`}
-          className="p-2 text-stone-400 hover:text-stone-600"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-50/85 text-lg leading-none text-stone-800 ring-1 ring-stone-300 hover:bg-stone-100 hover:text-stone-900"
           prefetch aria-label="Nächste Woche"
         >
           ›
